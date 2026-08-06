@@ -1,0 +1,469 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>SeedSigner dice entropy — AI analysis and full release history</title>
+<meta name="description" content="How SeedSigner turns dice rolls into a seed phrase: dynamically traced, cross-checked against other independent implementations, and tracked across every release since 2020.">
+<link rel="stylesheet" href="../assets/fonts.css">
+<link rel="stylesheet" href="../assets/series.css">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 16 16%22><text y=%2213%22 font-size=%2213%22>&#127922;</text></svg>">
+</head>
+<body>
+<button class="themetoggle" type="button" aria-label="Toggle light and dark theme">&#9681;</button>
+<div class="wrap">
+
+<header class="masthead">
+  <p class="eyebrow">AI analysis &middot; SeedSigner</p>
+  <h1>SeedSigner dice entropy</h1>
+  <p class="standfirst">An AI analysis of how SeedSigner turns dice rolls into a seed phrase, traced dynamically on the shipped code, cross-checked against other independent implementations,
+  and tracked across every release since 2020 to establish whether the same rolls have always
+  produced the same seed. Every claim below is reproducible; instructions are included.</p>
+  <dl class="meta">
+    <div><dt>Reviewed</dt><dd>0.8.7</dd></div>
+    <div><dt>History</dt><dd>Every tag, since 2020</dd></div>
+    <div><dt>Behavior changes</dt><dd>3</dd></div>
+    <div><dt>Analyzed by</dt><dd>Claude Fable 5</dd></div>
+  </dl>
+</header>
+
+<section class="short">
+  <span class="tag">The short version</span>
+  <p class="verdict">No defects found in the dice path.</p>
+  <ul>
+    <li>Unchanged since February 2022, identical seeds ever since</li>
+    <li>Independently written projects produce the same seed from the same rolls</li>
+    <li>No random number generator involved</li>
+  </ul>
+</section>
+
+<div class="note">
+  <span class="tag">Companion document</span>
+  <p>The construction itself is documented separately in <a href="standard.html">Dice to seed</a>:
+  the shared recipe, which other Bitcoin projects implement it, and what imperfect dice actually
+  cost. This page covers only SeedSigner's implementation.</p>
+</div>
+
+<nav class="toc">
+  <span class="tag">Contents</span>
+  <ol>
+    <li><a href="#implementation">The implementation</a></li>
+    <li><a href="#verification">Verification</a></li>
+    <li><a href="#results">Results</a></li>
+    <li><a href="#history">Every release, checked</a></li>
+    <li><a href="#degenerate">Degenerate cases</a></li>
+    <li><a href="#adjudication">Adjudication record</a></li>
+    <li><a href="#limits">What we did not verify</a></li>
+    <li><a href="#repro">How to check this yourself</a></li>
+    <li><a href="#provenance">Scope and provenance</a></li>
+  </ol>
+</nav>
+
+<h2 id="implementation"><a class="anchor" href="#implementation"><span class="num">1</span>The implementation</a></h2>
+
+<p>Reviewed at tag <code>0.8.7</code>, commit <code>e0a80d4b</code>. The function is eighteen
+lines, which is a good sign.</p>
+
+<pre><code>def generate_mnemonic_from_dice(roll_data: str, ...):
+    entropy_bytes = hashlib.sha256(roll_data.encode()).digest()
+
+    if len(roll_data) == DICE__NUM_ROLLS__12WORD:   # 50 rolls
+        entropy_bytes = entropy_bytes[:16]          # keep 128 bits
+
+    return bip39.mnemonic_from_bytes(entropy_bytes, ...).split()</code></pre>
+<figure>
+<figcaption><span class="tag">Verified</span>
+<a href="https://github.com/SeedSigner/seedsigner/blob/0.8.7/src/seedsigner/helpers/mnemonic_generation.py#L64-L81">mnemonic_generation.py L64&ndash;81 at tag 0.8.7</a></figcaption>
+</figure>
+
+<p>The digits are hashed <strong>as text</strong>, not converted to base 6, not reduced to
+bits. For a 12-word seed only the first 128 bits of the hash are used. This is the shared
+construction described in the <a href="standard.html">companion document</a>.</p>
+
+<h3 id="the-roll-count-is-fixed-on-purpose"><a class="anchor" href="#the-roll-count-is-fixed-on-purpose">The roll count is fixed on purpose</a></h3>
+<p><span class="tag">Verified</span> The entry view passes
+<a href="https://github.com/SeedSigner/seedsigner/blob/0.8.7/src/seedsigner/views/tools_views.py#L246"><code>return_after_n_chars</code></a>,
+so it returns only after exactly the required number of entries. You can neither stop early nor
+add extra rolls.</p>
+<p>Fixing the count is a design decision rather than an oversight. Offering extra rolls would
+imply 99 is insufficient, which it is not: 99 fair rolls deliver 255.9 of a 24-word seed's 256
+bits, and a 100th roll overshoots what the seed can hold. The companion document works through
+<a href="standard.html#more">what bias would actually justify rolling more</a>, briefly, a
+die so defective you would replace it.</p>
+
+<h2 id="verification"><a class="anchor" href="#verification"><span class="num">2</span>Verification</a></h2>
+
+<h3 id="traced-not-just-read"><a class="anchor" href="#traced-not-just-read">Traced, not just read</a></h3>
+<p>Claiming &ldquo;no random number generator is involved&rdquo; from reading code is an
+inference. It was also demonstrated: the shipped function was run with <code>hashlib.sha256</code>
+instrumented to log every construction and update, and with trip-wires on <code>os.urandom</code>,
+<code>secrets</code> and <code>random</code>.</p>
+
+<pre><code>input                            : 99 ASCII digits
+RNG calls DURING seed generation : 0
+RNG calls at import time         : 1
+   os.urandom &lt;- embit/util/ctypes_secp256k1.py  (context randomization)
+
+sha256 events in the entropy path: 2 calls
+   new    &lt;-  99 bytes  655152231316521321611331544441236...
+   digest -&gt; 51531761ec7a738946e0b9f46bb11320a695495430e345c14f01ad8b3b898a6d
+   new    &lt;-  32 bytes  51531761ec7a738946e0b9f46bb11320...
+   digest -&gt; 867da839c3513afebd643a5f4b3fd635dd2e335b585f5b7a1e949e17fa6e2e3d
+
+matches published vector         : True</code></pre>
+<figure>
+<figcaption><span class="tag">Measured</span> <code>dice_dynamic_trace.py</code>, run against
+an export of tag 0.8.7</figcaption>
+</figure>
+
+<div class="note pass">
+  <span class="tag">Result</span>
+  <p><strong>Zero randomness calls occur while the seed is generated.</strong> The single call in
+  the process happens at import, when embit randomizes its libsecp256k1 context as side-channel
+  hygiene, unrelated to seed material, and it occurs whether or not the dice screen is ever
+  opened. Stated precisely because a naive trip-wire reports it and it looks alarming.</p>
+  <p>The accounting is complete: <strong>two</strong> SHA-256 calls. The first consumes exactly
+  the 99 digits typed and produces the entropy; the second consumes that digest to derive the
+  BIP-39 checksum. Nothing else enters the chain.</p>
+</div>
+
+<h3 id="against-the-published-vectors"><a class="anchor" href="#against-the-published-vectors">Against the published vectors</a></h3>
+<p>SeedSigner publishes two worked examples in
+<a href="https://github.com/SeedSigner/seedsigner/blob/0.8.7/docs/dice_verification.md">docs/dice_verification.md</a>.
+Both were reproduced <em>without</em> using its code, via a from-scratch BIP-39
+implementation written from the specification, and independently via Trezor's
+<code>python-mnemonic</code>.</p>
+
+<div class="tablewrap">
+<table>
+  <thead><tr><th>Input</th><th>Expected</th><th>Result</th></tr></thead>
+  <tbody>
+    <tr><td>99 rolls <code>6551522313&hellip;</code></td><td><em>eyebrow obvious such suggest poet seven&hellip;</em></td><td class="num">exact</td></tr>
+    <tr><td>50 rolls <code>6551522313&hellip;</code></td><td><em>hole luggage safe present express tragic&hellip;</em></td><td class="num">exact</td></tr>
+  </tbody>
+</table>
+</div>
+
+<p>The published fingerprint <code>8d9cced8</code> also derives correctly from the 12-word phrase,
+checking the whole chain from dice to Bitcoin keys rather than just the word lookup. The
+from-scratch implementation was validated against the
+<a href="https://github.com/trezor/python-mnemonic/blob/v0.21/vectors.json">official BIP-39 test
+vectors</a> first, 24 of 24, so it is a known-good reference rather than a
+coincidental agreement.</p>
+
+<h3 id="against-other-implementations"><a class="anchor" href="#against-other-implementations">Against other implementations</a></h3>
+<p>Two levels of comparison, kept distinct because they are different strengths of evidence:</p>
+<ul>
+  <li><strong>Executed.</strong> Coldcard's construction was transcribed from
+    <a href="https://github.com/Coldcard/firmware/blob/3238f6fd/shared/seed.py">its source at
+    commit <code>3238f6fd</code></a> and run: <strong>4,000 random roll sequences produced zero
+    mismatches</strong>, alongside both published vectors.</li>
+  <li><strong>Read from source.</strong> Krux, Kern, Seed Tool, Gordian seedtool-cli and
+    iancoleman.io (Hex or Base 10 mode) were confirmed to implement the identical construction,
+    but were not executed here.</li>
+</ul>
+<p>Independently written projects produce the same seed from the same rolls. The
+<a href="standard.html#implementations">companion document</a> covers them in detail.</p>
+
+<h2 id="results"><a class="anchor" href="#results"><span class="num">3</span>Results</a></h2>
+
+<div class="note pass">
+  <span class="tag">Verdict</span>
+  <p><strong>No defects found in the current implementation.</strong> The dice path takes the
+  digits the user typed, hashes them once, and derives a BIP-39 mnemonic. Nothing else enters,
+  no randomness is consulted, and the result matches every other implementation of the shared construction
+  and the project's own published vectors.</p>
+  <p>The history is less uniform than the current code suggests, three behavioral changes,
+  all before February 2022, and that is the substantive finding of this analysis.</p>
+</div>
+
+<h2 id="history"><a class="anchor" href="#history"><span class="num">4</span>Every release, checked</a></h2>
+
+<p>A subtle way for a seed implementation to fail is to change quietly, producing different seeds
+from the same input across versions without anyone noticing. The entire release history was
+walked, every tag back to December 2020, diffing the dice path at each.</p>
+
+<p><strong>It changed three times, all within a six-month window ending February 2022.</strong>
+Every release since produces identical seeds from identical rolls.</p>
+
+<div class="tablewrap">
+<table>
+  <thead><tr><th>Releases</th><th>Dates</th><th>Construction</th><th>A rolled six<br>recorded as</th><th>Same seed as today?</th></tr></thead>
+  <tbody>
+    <tr><td>0.0.1 &ndash; 0.0.2</td><td>Dec 2020</td><td>no dice feature yet</td><td>n/a</td><td>n/a</td></tr>
+    <tr><td>0.2.0 &ndash; 0.4.3</td><td>Jan &ndash; Jul 2021</td><td><code>int(rolls, 6)</code>, last word forced through <code>abandon</code>, zeroing three entropy bits</td><td><code>0</code></td><td class="weak">No</td></tr>
+    <tr><td>0.4.4</td><td>Aug 2021</td><td><code>int(rolls, 6)</code> &rarr; 32 bytes little-endian</td><td><code>0</code></td><td class="weak">No</td></tr>
+    <tr><td>0.4.5</td><td>Nov 2021</td><td><code>sha256(rolls)</code></td><td><code>0</code></td><td class="weak">No</td></tr>
+    <tr><td><strong>0.4.6 &ndash; 0.8.7</strong></td><td>Feb 2022 &ndash; present</td><td><code>sha256(rolls)</code>, first 16 bytes at 50 rolls</td><td><code>6</code></td><td class="num">Yes</td></tr>
+  </tbody>
+</table>
+</div>
+<figure>
+<figcaption>The 12-word (50-roll) option arrives at 0.5.0; before that dice produced 24-word seeds
+only. 24-word results are identical from 0.4.6 onward, 12-word from 0.5.0.</figcaption>
+</figure>
+
+<h3 id="what-changed-and-why"><a class="anchor" href="#what-changed-and-why">What changed, and why</a></h3>
+<div class="tablewrap">
+<table>
+  <thead><tr><th>Commit</th><th>Date</th><th>Stated rationale</th><th>Effect on the seed</th></tr></thead>
+  <tbody>
+    <tr><td><code>f8ab179f</code></td><td>2021-01-15</td><td>&ldquo;New module structure&rdquo;</td><td>Original <code>dice.py</code>, rolls parsed as a base-6 number.</td></tr>
+    <tr><td><code>bb54af05</code></td><td>2021-08-20</td><td>&ldquo;chaining camera entropy; mnemonic methods factored out&rdquo;</td><td class="weak"><strong>Changed.</strong> Dropped the <code>abandon</code> final-word substitution, which had been zeroing three entropy bits.</td></tr>
+    <tr><td><code>5422aaf0</code></td><td>2021-10-13</td><td><strong>&ldquo;make dice seed generation verifiable outside seedsigner&rdquo;</strong></td><td class="weak"><strong>Changed.</strong> Base-6 parsing &rarr; <code>sha256</code>.</td></tr>
+    <tr><td><code>42242758</code></td><td>2022-01-05</td><td>&ldquo;Remove special case for dice roll 6&rdquo;</td><td class="weak"><strong>Changed.</strong> A rolled six stopped being recorded as <code>0</code>.</td></tr>
+    <tr><td><code>451757a0</code></td><td>2022-01-05</td><td>&ldquo;Test dice roll math against a set of known dice rolls&rdquo;</td><td class="num">Added pinned known-answer vectors.</td></tr>
+    <tr><td><code>dac78b3a</code></td><td>2022-03-23</td><td>&ldquo;12- and 24-word dice roll seed creation&rdquo;</td><td>Added the 50-roll path. 24-word path untouched.</td></tr>
+  </tbody>
+</table>
+</div>
+
+<p class="pull">The churn stopped the same week known-answer tests were added, and the
+construction has not moved since.</p>
+
+<p>The direction of travel is legible from the commit messages. The base-6 approach worked but was
+idiosyncratic, so nothing else could reproduce a SeedSigner dice seed; <code>5422aaf0</code>
+adopted the construction other tools already used, expressly to make external verification
+possible. The six-recorded-as-zero quirk was a leftover from base 6, base 6 has no digit 6
+which survived the hash switch by two months. On the day it was removed, pinned test
+vectors landed.</p>
+
+<div class="note warn">
+  <span class="tag">If you kept old roll numbers</span>
+  <p>Re-entering old rolls on a current release will not give you back your original seed. Every
+  release since <code>0.4.6</code> hashes the digits exactly as you rolled them, and the earlier
+  releases did not.</p>
+  <p><strong>The rolls are still a route back.</strong> Every construction in the table above is a
+  deterministic function of the digits you entered, so an old seed can be recovered off-device using
+  the formula for its era. What changed is which formula, not whether one exists.</p>
+  <ul>
+    <li><strong>0.4.5</strong> hashed the rolls with every <code>6</code> recorded as <code>0</code>,
+    then used the full digest for 24 words. That is the same convention the
+    <a href="standard.html#addendum">companion document's addendum</a> describes, and
+    <a href="evidence/verify_constructions.py"><code>verify_constructions.py</code></a> in this
+    repository already implements it.</li>
+    <li><strong>0.4.4 and earlier</strong> read the digits as a base-6 number and took 32 bytes
+    little-endian, again with <code>6</code> recorded as <code>0</code>. No shipping tool does this,
+    but the formula is in the table above. Before <code>0.4.4</code>, a word substitution zeroed
+    three entropy bits on top of that.</li>
+  </ul>
+  <p>Your written words remain the primary backup and are unaffected. Treat this as the route back
+  if those are lost, not a reason to keep rolls instead of words. If you do reconstruct, run the
+  tool yourself on a machine that is offline, and treat the output as a live seed from the moment it
+  appears.</p>
+</div>
+
+<p><span class="tag">Verified</span> Since <code>0.4.6</code> (February 2022) the entropy
+derivation and the recorded input have both been unchanged at <strong>every release tag since</strong>,
+established by diffing rather than assumed.</p>
+
+<h3 id="testing"><a class="anchor" href="#testing">Testing</a></h3>
+<p>The dice path is covered by pinned known-answer tests, not merely validity checks.
+<a href="https://github.com/SeedSigner/seedsigner/blob/0.8.7/tests/test_mnemonic_generation.py">tests/test_mnemonic_generation.py</a>
+at 0.8.7 contains <code>test_known_dice_rolls()</code> and <code>test_50_dice_rolls()</code>,
+each pinning several roll sequences to expected mnemonics, plus
+<code>test_verify_against_coldcard_sample()</code>.</p>
+<p>A silent change to the algorithm would therefore break the build on both the 12- and 24-word
+paths. Given the history above, that coverage is doing real work.</p>
+
+<h2 id="degenerate"><a class="anchor" href="#degenerate"><span class="num">5</span>Degenerate cases</a></h2>
+
+<h3 id="typing-the-same-digit-fifty-times"><a class="anchor" href="#typing-the-same-digit-fifty-times">Typing the same digit fifty times</a></h3>
+<p>SeedSigner accepts it. Entering <code>5</code> fifty times produces a seed, and no guard
+objects.</p>
+<p><span class="tag">Inferred</span> Rated low because it is user-caused and user-visible: it
+requires actively deciding to type one digit repeatedly instead of rolling a die, which defeats
+the entire ceremony the user chose to perform. This is categorically different from a device
+silently producing weak entropy.</p>
+<p>The intuitive guard is the wrong one. A &ldquo;did you use enough different numbers?&rdquo;
+check passes <code>123123123&hellip;</code>, three distinct faces, about 7 bits of real
+randomness, while rejecting a two-faces-only sequence that genuinely carries 99 bits. The
+dangerous property is <em>repetition</em>, not low variety. The
+<a href="standard.html#guards">companion document</a> covers what does work, and where those
+guards fall short.</p>
+
+<h3 id="stopping-early-or-adding-extra-rolls"><a class="anchor" href="#stopping-early-or-adding-extra-rolls">Stopping early, or adding extra rolls</a></h3>
+<p><span class="tag">Verified</span> Neither is possible. <code>return_after_n_chars</code>
+returns only on exactly 50 or 99 entries. The back button exits the flow without producing a seed.</p>
+
+<h3 id="non-english-wordlists"><a class="anchor" href="#non-english-wordlists">Non-English wordlists</a></h3>
+<p><span class="tag">Verified</span> <code>generate_mnemonic_from_dice</code> accepts a
+<code>wordlist_language_code</code> and passes it to <code>bip39.mnemonic_from_bytes</code>. The
+entropy derivation is unaffected, the same rolls give the same 256 bits regardless of
+language; only the words rendering those bits differ.</p>
+
+<h2 id="adjudication"><a class="anchor" href="#adjudication"><span class="num">6</span>Adjudication record</a></h2>
+
+<div class="note">
+  <span class="tag">Read this before filing a finding</span>
+  <p>Everything below was raised and consciously dispositioned. The <em>reasoning</em> is recorded,
+  not just the verdict, so it can be attacked efficiently rather than rediscovered. These are not
+  settled, the <strong>weakest point</strong> on each entry is where this analysis is most
+  likely wrong. Start there.</p>
+</div>
+
+<h3 id="s-1-the-dice-path-might-consult-a-random-number-generator"><a class="anchor" href="#s-1-the-dice-path-might-consult-a-random-number-generator">1. The dice path might consult a random number generator</a></h3>
+<p>Refuted by dynamic tracing, not just by reading: zero RNG calls during seed generation, with
+complete accounting of both SHA-256 calls.</p>
+<p class="weak"><strong>Weakest point:</strong> the trace runs the Python function on a
+workstation, not the shipped image on device. A divergence would have to be introduced below the
+Python layer, in the interpreter or the OS build, which is the same gap as
+&sect;7.</p>
+
+<h3 id="s-2-the-algorithm-may-have-changed-silently-across-releases"><a class="anchor" href="#s-2-the-algorithm-may-have-changed-silently-across-releases">2. The algorithm may have changed silently across releases</a></h3>
+<p>Confirmed, three times, all before February 2022.</p>
+<p class="weak"><strong>Weakest point:</strong> this is the finding most likely to still be
+incomplete. It rests on diffing the dice path at each tag, and before
+<code>mnemonic_generation.py</code> existed that code lived in view files under different names.
+A change hidden in a helper the diff did not follow would be missed.</p>
+
+<h3 id="s-3-the-test-suite-does-not-pin-the-answer"><a class="anchor" href="#s-3-the-test-suite-does-not-pin-the-answer">3. The test suite does not pin the answer</a></h3>
+<p><strong>False, and here is the trap that produces it.</strong> Three tests pin dice output to
+expected mnemonics. Reading <code>test_dice_rolls()</code> alone suggests otherwise, it
+asserts only validity, and it is easy to generalize from that one function to the file. Read
+the rest before concluding the construction is unpinned.</p>
+<p class="weak"><strong>Weakest point:</strong> the tests pin the <em>current</em> construction, so
+they guard the future rather than the past. They could not have caught the 2021 changes, which
+predate them.</p>
+
+<h3 id="s-4-99-rolls-may-not-be-enough-entropy"><a class="anchor" href="#s-4-99-rolls-may-not-be-enough-entropy">4. 99 rolls may not be enough entropy</a></h3>
+<p>99 rolls yield 255.9 bits against a 256-bit seed. Extra rolls overshoot what the seed can hold.</p>
+<p class="weak"><strong>Weakest point:</strong> the bit arithmetic assumes SHA-256 behaves as an
+ideal randomness extractor. Standard practice, and the margins are far too large for the
+difference to matter, but it is an assumption rather than a proof.</p>
+
+<h3 id="s-5-seedsigner-may-diverge-from-other-implementations"><a class="anchor" href="#s-5-seedsigner-may-diverge-from-other-implementations">5. SeedSigner may diverge from other implementations</a></h3>
+<p>Refuted. Independently written projects produce identical output.</p>
+<p class="weak"><strong>Weakest point:</strong> only Coldcard was executed against SeedSigner. The
+others were confirmed by reading source, which is weaker evidence, and all were read at
+current revisions rather than at the versions any given user is running.</p>
+
+<h3 id="s-6-imperfect-dice-weaken-the-seed"><a class="anchor" href="#s-6-imperfect-dice-weaken-the-seed">6. Imperfect dice weaken the seed</a></h3>
+<p>Addressed quantitatively in the <a href="standard.html#quality">companion document</a>: a
+realistically bad die costs about 11 bits of 256.</p>
+<p class="weak"><strong>Weakest point:</strong> min-entropy figures assume the attacker knows the
+die's bias exactly. That is deliberately conservative, but the modeling of what a
+&ldquo;realistically bad&rdquo; die looks like is an assumption, not a measurement of real dice.</p>
+
+<h2 id="limits"><a class="anchor" href="#limits"><span class="num">7</span>What we did not verify</a></h2>
+
+<p>This analysis reads and executes source at tag <code>0.8.7</code>. It does <strong>not</strong>
+establish that the release image users actually run contains that source, which is the seam
+where the Coldcard Mk3 defect that prompted this work actually lived. Their <code>seed.py</code>
+looked correct; the problem was which <code>rng.c</code> got linked.</p>
+
+<p>That gap is closable, and by you rather than by us: SeedSigner OS supports
+<a href="https://github.com/SeedSigner/seedsigner-os/blob/v0.8.7/docs/building.md">reproducible
+builds</a>. Building the image from source in Docker should yield a SHA-256 matching the hash
+published with the release. A reader who wants the full chain, from typed digits through to
+the bytes on their microSD card, should run that build and compare. It is a stronger check
+than anything in this document.</p>
+
+<p>Also not covered: the coin-flip path, which uses the same construction and the same reasoning
+but was not separately vector-tested; and every other SeedSigner subsystem.</p>
+
+<h2 id="repro"><a class="anchor" href="#repro"><span class="num">8</span>How to check this yourself</a></h2>
+
+<h3 id="the-history-claims-with-git-alone"><a class="anchor" href="#the-history-claims-with-git-alone">The history claims, with git alone</a></h3>
+<pre><code>git clone https://github.com/SeedSigner/seedsigner
+cd seedsigner
+
+# every commit that touched the function
+git log -S "generate_mnemonic_from_dice" --oneline -- '*.py'
+
+# the three behavioral changes
+git show bb54af05    # abandon-substitution removed
+git show 5422aaf0    # base-6 -> sha256
+git show 42242758    # six no longer recorded as 0
+
+# the construction at any release
+git show 0.4.5:src/seedsigner/views/seed_tools_view.py | grep -n 'roll_data'
+git show 0.8.7:src/seedsigner/helpers/mnemonic_generation.py</code></pre>
+
+<h3 id="the-trace-and-the-vectors"><a class="anchor" href="#the-trace-and-the-vectors">The trace and the vectors</a></h3>
+<p><code>dice_dynamic_trace.py</code> and <code>dice_validation.py</code> accompany this document.
+Both need <code>pip install mnemonic embit==0.8.0</code> in a virtual environment.</p>
+
+<h3 id="with-your-own-ai-assistant"><a class="anchor" href="#with-your-own-ai-assistant">With your own AI assistant</a></h3>
+<div class="note">
+  <span class="tag">Prompt</span>
+  <p>Read <code>src/seedsigner/helpers/mnemonic_generation.py</code> in
+  github.com/SeedSigner/seedsigner at tag 0.8.7, function <code>generate_mnemonic_from_dice</code>.</p>
+  <p>1. How do dice rolls become seed entropy, hashed as text, or converted numerically?<br>
+  2. Reproduce the two worked examples in <code>docs/dice_verification.md</code>
+  <strong>without using the project's own code</strong>: implement BIP-39 from the specification,
+  and separately cross-check with Trezor's <code>python-mnemonic</code>.<br>
+  3. Validate your from-scratch implementation against the official BIP-39 vectors first.<br>
+  4. Walk the git history across every release tag. Has the dice construction ever changed? If so,
+  when, and would the same rolls produce a different seed?<br>
+  5. Instrument <code>hashlib.sha256</code> and trip-wire <code>os.urandom</code>,
+  <code>secrets</code> and <code>random</code>, then run the function. What is called, and when?</p>
+</div>
+<p>Tell it explicitly <strong>not</strong> to evaluate the result by testing whether the output
+looks random. Hashing anything produces output that passes randomness tests, including a hash of a
+terrible input, so such tests cannot detect a weak seed. Read
+<a href="../CONVENTIONS.md">the deployment-reality section of CONVENTIONS.md</a> first,
+reviewers repeatedly produce confident findings that do not apply to air-gapped hardware.</p>
+
+<h3 id="what-ships-with-this-page"><a class="anchor" href="#what-ships-with-this-page">What ships with this page</a></h3>
+<p>Every script behind the results above is in the repository beside this document. Each one prints
+what it checked rather than a verdict. Only <code>evidence/verify_constructions.py</code> is standard
+library only; the other three need <code>pip install mnemonic embit==0.8.0</code> in a virtual
+environment.</p>
+<div class="tablewrap">
+<table>
+  <thead><tr><th>File</th><th>What it establishes</th></tr></thead>
+  <tbody>
+    <tr><td><a href="dice_dynamic_trace.py"><code>dice_dynamic_trace.py</code></a></td><td>The dynamic trace in <a href="#verification">&sect;2</a>: runs the shipped function with the entropy primitives instrumented, so &ldquo;no random number generator is involved&rdquo; is demonstrated rather than read.</td></tr>
+    <tr><td><a href="dice_validation.py"><code>dice_validation.py</code></a></td><td>The cross-checks in <a href="#verification">&sect;2</a>, three ways that share no code: a from-scratch BIP-39 implementation, <code>python-mnemonic</code>, and <code>embit</code>.</td></tr>
+    <tr><td><a href="dice_coldcard_crosscheck.py"><code>dice_coldcard_crosscheck.py</code></a></td><td>The 4,000-sequence run against Coldcard&rsquo;s transcribed construction.</td></tr>
+    <tr><td><a href="evidence/verify_constructions.py"><code>evidence/verify_constructions.py</code></a></td><td>Independent of SeedSigner&rsquo;s code entirely. Self-tests against the official BIP-39 vectors, then reproduces the published vectors from the <a href="standard.html#spec">companion document</a>. Run it from <code>evidence/</code>.</td></tr>
+  </tbody>
+</table>
+</div>
+
+<h2 id="provenance"><a class="anchor" href="#provenance"><span class="num">9</span>Scope and provenance</a></h2>
+
+<dl class="meta">
+  <div><dt>Analysis date</dt><dd>2026-08-03</dd></div>
+  <div><dt>Model</dt><dd>Claude Fable 5 (<code>claude-fable-5</code>), in Claude Code</dd></div>
+  <div><dt>Reviewed</dt><dd>Tag <code>0.8.7</code> = <code>e0a80d4b</code>; every tag walked for history</dd></div>
+  <div><dt>Executed against</dt><dd><code>python-mnemonic</code>, <code>embit</code> 0.8.0, a from-scratch BIP-39 implementation, the official BIP-39 vectors, and Coldcard's transcribed construction</dd></div>
+  <div><dt>Source-read only</dt><dd>Krux, Kern, Seed Tool, Gordian seedtool-cli, iancoleman.io</dd></div>
+  <div><dt>Human direction</dt><dd>Scope, the ecosystem survey and the full-history review were directed by SeedSigner's lead developer. Several conclusions were revised in response to challenges.</dd></div>
+  <div><dt>What it is not</dt><dd>An audit. No independent engagement, no certification.</dd></div>
+</dl>
+
+<h3 id="traps-claims-that-look-right-and-are-not"><a class="anchor" href="#traps-claims-that-look-right-and-are-not">Traps, claims that look right and are not</a></h3>
+<p>Findings here went to fresh agents instructed to refute them. Each of the following survived a
+first reading and turned out to be false. They are recorded because a reviewer working the same
+sources will meet the same traps, and because corrections made after publication will be listed
+here too.</p>
+<div class="tablewrap">
+<table>
+  <thead><tr><th>Plausible claim</th><th>Why it is wrong</th></tr></thead>
+  <tbody>
+    <tr><td>&ldquo;Exactly one behavioral change, in 0.4.5&rdquo;</td><td>There are three. <code>bb54af05</code> (0.4.4) removed an <code>abandon</code> substitution that had been zeroing three entropy bits; <code>42242758</code> (0.4.6) stopped recording a rolled six as <code>0</code>. The stability cutoff is 0.4.6, not 0.4.5.</td></tr>
+    <tr><td>&ldquo;The test suite does not pin dice output&rdquo;</td><td>Three tests pin expected mnemonics. The claim comes from reading <code>test_dice_rolls()</code> and not the rest of the file.</td></tr>
+    <tr><td>&ldquo;The pre-0.4.5 interface collected digits 0&ndash;5&rdquo;</td><td>The interface always showed 1&ndash;6; a six was mapped to <code>0</code> internally. The inference is sound, base-6 parsing does reject the character <code>6</code>, and the conclusion is still false.</td></tr>
+    <tr><td>&ldquo;Eleven releases since&rdquo; / &ldquo;about fifteen lines&rdquo;</td><td>Nine releases since 0.4.6; eighteen lines. Count, do not estimate.</td></tr>
+  </tbody>
+</table>
+</div>
+
+</div>
+<script>
+(function () {
+  var b = document.querySelector('.themetoggle');
+  if (!b) return;
+  b.addEventListener('click', function () {
+    var cur = document.documentElement.getAttribute('data-theme');
+    if (!cur) {
+      cur = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+    }
+    document.documentElement.setAttribute('data-theme', cur === 'dark' ? 'light' : 'dark');
+  });
+})();
+</script>
+</body>
+</html>

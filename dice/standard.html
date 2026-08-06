@@ -1,0 +1,904 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Dice to seed — how Bitcoin wallets turn dice rolls into a mnemonic</title>
+<meta name="description" content="The dice-to-seed construction shared across Bitcoin wallets: the recipe, which implementations interoperate, and what imperfect dice actually cost.">
+<link rel="stylesheet" href="../assets/fonts.css">
+<link rel="stylesheet" href="../assets/series.css">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 16 16%22><text y=%2213%22 font-size=%2213%22>&#127922;</text></svg>">
+<style>
+.flow{margin:26px 0 8px}
+.fstep{display:grid;grid-template-columns:34px 1fr;gap:16px;position:relative;padding-bottom:24px}
+.fstep:not(:last-child)::before{content:"";position:absolute;left:16px;top:36px;bottom:2px;width:2px;background:var(--rule-strong)}
+.fbadge{width:34px;height:34px;border-radius:50%;display:grid;place-items:center;background:var(--accent);
+  color:var(--ground);font-family:var(--mono);font-weight:600;font-size:16px;position:relative;z-index:1}
+.fbody{min-width:0;padding-top:5px}
+.flabel{font-family:var(--mono);font-weight:600;font-size:17px;margin:0 0 11px;line-height:1.3}
+.fnote{font-size:15px;color:var(--muted);margin:9px 0 0;line-height:1.5}
+.fdice{display:flex;align-items:center;gap:9px;flex-wrap:wrap;color:var(--accent)}
+.fell{font-family:var(--mono);color:var(--faint);font-size:21px;padding-left:2px}
+.fdatum{font-family:var(--mono);font-size:14px;line-height:1.75;word-break:break-all;
+  background:var(--raised);border:1px solid var(--rule);padding:10px 12px}
+.fdatum.fhash{color:var(--accent-ink)}
+.frepl{white-space:pre-wrap}
+.frepl .fprompt{color:var(--faint);user-select:none;-webkit-user-select:none}
+.frepl .fstr{color:var(--muted)}
+.frepl .fout{color:var(--accent-ink);display:block;margin-top:5px}
+.fbytes,.fregroup{font-family:var(--mono);font-size:14px;display:flex;flex-wrap:wrap;gap:8px 10px;align-items:flex-end}
+.fbyte{display:inline-flex;flex-direction:column;gap:3px}
+.fbyte i{font-style:normal;font-size:12px;color:var(--accent-ink);letter-spacing:.06em}
+.fregroup{gap:0 6px}
+.fregroup span{padding:3px 5px}
+.fregroup .g0{background:var(--accent-soft);color:var(--accent-ink)}
+.fregroup .g1{background:var(--raised)}
+.fgroups{display:flex;flex-direction:column;gap:6px}
+.frow{display:flex;align-items:center;gap:9px;flex-wrap:wrap;font-size:15px}
+.frow code{font-family:var(--mono);font-size:14px;background:var(--raised);border:1px solid var(--rule);padding:2px 7px}
+.frow code.fidx{color:var(--accent-ink);min-width:50px;text-align:right}
+.frow .fplus{font-family:var(--mono);font-size:12.5px;color:var(--faint);letter-spacing:.04em}
+.fck{display:flex;flex-direction:column;gap:9px;margin-top:12px}
+.fckrow{display:flex;gap:14px;align-items:baseline;flex-wrap:wrap}
+.fcklbl{font-size:14px;color:var(--muted);flex:0 0 250px;line-height:1.45}
+.fcklbl code{font-family:var(--mono);font-size:13px;background:var(--raised);padding:1px 4px}
+.fckval{display:flex;align-items:baseline;gap:5px;flex-wrap:wrap;min-width:0}
+.fckval code{font-family:var(--mono);font-size:14px;padding:3px 6px;background:var(--raised);border:1px solid var(--rule)}
+.fckval code.ent{background:var(--accent-soft);color:var(--accent-ink);border-color:transparent}
+.fckval code.chk{border-color:var(--rule-strong);font-weight:600}
+.fckval code.dim{background:none;border-color:transparent;color:var(--faint);padding:3px 0}
+.fckval code.fidx{background:none;border-color:transparent;color:var(--accent-ink);padding:3px 1px}
+.fckval .farr,.fckval .fplus{color:var(--faint);font-family:var(--mono);font-size:12.5px}
+.fckrow.tot{border-top:1px solid var(--rule);padding-top:11px;margin-top:2px}
+@media (max-width:640px){.fcklbl{flex:1 1 100%}}
+.frow .farr{color:var(--faint)}
+.frow.fmore{color:var(--faint);font-family:var(--mono);font-size:13.5px;padding-left:4px}
+.fchips{display:flex;flex-wrap:wrap;gap:6px}
+.fchip{font-size:15px;background:var(--surface);border:1px solid var(--rule-strong);padding:4px 9px 4px 6px;
+  display:inline-flex;align-items:baseline;gap:6px}
+.fchip i{font-family:var(--mono);font-size:12px;color:var(--faint);font-style:normal;min-width:14px;text-align:right}
+.bar{position:relative;height:24px;background:var(--raised);border:1px solid var(--rule);margin:5px 0 0}
+.bar i{position:absolute;top:1px;height:10px;background:var(--accent);opacity:.8;display:block}
+.bar i.b12{top:12px;background:var(--muted);opacity:.55}
+.bar u{position:absolute;top:-3px;bottom:-3px;width:2px;background:var(--ink);opacity:.8}
+.bar u.floor{background:none;border-left:2px dashed var(--muted);width:0}
+@media (max-width:640px){.fstep{grid-template-columns:28px 1fr;gap:12px}
+  .fbadge{width:28px;height:28px;font-size:13px}.fstep:not(:last-child)::before{left:13px;top:30px}
+  .fdatum{font-size:12.5px}}
+</style>
+</head>
+<body>
+<button class="themetoggle" type="button" aria-label="Toggle light and dark theme">&#9681;</button>
+<div class="wrap">
+
+<header class="masthead">
+  <p class="eyebrow">Reference &middot; Bitcoin seed generation</p>
+  <h1>Dice to seed</h1>
+  <p class="standfirst">Bitcoin wallets that generate seeds from dice rolls all use the same
+  recipe. This documents it, verifies it against every implementation, and looks honestly at what
+  imperfect dice actually cost.</p>
+  <dl class="meta">
+    <div><dt>First published</dt><dd>2026-08-03</dd></div>
+    <div><dt>Scope</dt><dd>Dice &rarr; BIP-39</dd></div>
+    <div><dt>Method</dt><dd>Source-read</dd></div>
+    <div><dt>Status</dt><dd>Living document</dd></div>
+  </dl>
+</header>
+
+<section class="short">
+  <span class="tag">The short version</span>
+  <div class="sgrid">
+    <div><div class="n">1</div><div class="k">recipe, shared across the ecosystem</div></div>
+    <div><div class="n">0</div><div class="k">mismatches over 4,000 sequences run against Coldcard</div></div>
+    <div><div class="n">2.4&times;</div><div class="k">bias before a 24-word seed drops to 128 bits</div></div>
+    <div><div class="n">11</div><div class="k">bits a realistically bad die costs, 245 remain</div></div>
+  </div>
+</section>
+
+<nav class="toc">
+  <span class="tag">Contents</span>
+  <ol>
+    <li><a href="#why">Why dice at all</a></li>
+    <li><a href="#how">How it works</a></li>
+    <li><a href="#implementations">Who implements it</a></li>
+    <li><a href="#quality">Does dice quality matter?</a></li>
+    <li><a href="#more">Why not roll more than 99?</a></li>
+    <li><a href="#guards">Guarding against bad rolls</a></li>
+    <li><a href="#trust">What you still have to trust</a></li>
+    <li><a href="#verify">Verify it yourself</a></li>
+    <li><a href="#spec">Reference: the construction</a></li>
+    <li><a href="#analyses">Known analyses</a></li>
+    <li><a href="#addendum">Addendum: other dice methods</a></li>
+  </ol>
+</nav>
+
+<h2 id="why"><a class="anchor" href="#why"><span class="num">1</span>Why dice at all</a></h2>
+<p>Every Bitcoin wallet has to produce a seed from somewhere, and almost all of them use the
+device's own random number generator. You are then trusting that generator, and there is nothing in
+its output you can inspect to tell whether it did its job. A sound generator and a broken one
+produce results that look exactly alike.</p>
+<p>Dice are for when you would rather not take that on trust. The rolls are the only input, so the
+seed is a pure function of something you watched happen, reproducible elsewhere to confirm
+the device did what it should.</p>
+<p class="pull">A seed the device chose, you can only <em>trust</em>. A seed you rolled yourself, you
+can <em>verify</em>.</p>
+<figure>
+<figcaption>Note what that does <em>not</em> claim. Verifying needs a computer, because the
+SHA-256 in this recipe cannot be done by hand at any speed. Coin flips are the format that survives
+a pencil: 128 or 256 flips are already BIP-39 entropy, so all but the final word can be read off a
+printed table with no arithmetic at all, and only the checksum word needs a hash. That is exactly
+the word the devices in the <a href="#addendum">addendum</a> offer to compute, and it is why their
+paper-table methods drop the hash rather than adopt it. This recipe buys reproducibility, not
+hand-verifiability.</figcaption>
+</figure>
+
+<h2 id="how"><a class="anchor" href="#how"><span class="num">2</span>How it works</a></h2>
+<p><strong>50 rolls makes a 12-word seed. 99 rolls makes a 24-word seed.</strong> Every
+implementation listed below does exactly this. A formal specification with test vectors is at the
+<a href="#spec">end</a>.</p>
+
+<div class="flow">
+<div class="fstep"><div class="fbadge">1</div><div class="fbody"><p class="flabel">Roll a die 99 times</p><div class="fdice"><svg viewBox="0 0 100 100" width="40" height="40" role="img" aria-label="die showing 6"><rect x="4" y="4" width="92" height="92" rx="18" fill="none" stroke="currentColor" stroke-width="6"/><circle cx="28" cy="26" r="8.5" fill="currentColor"/><circle cx="72" cy="26" r="8.5" fill="currentColor"/><circle cx="28" cy="50" r="8.5" fill="currentColor"/><circle cx="72" cy="50" r="8.5" fill="currentColor"/><circle cx="28" cy="74" r="8.5" fill="currentColor"/><circle cx="72" cy="74" r="8.5" fill="currentColor"/></svg><svg viewBox="0 0 100 100" width="40" height="40" role="img" aria-label="die showing 5"><rect x="4" y="4" width="92" height="92" rx="18" fill="none" stroke="currentColor" stroke-width="6"/><circle cx="28" cy="28" r="8.5" fill="currentColor"/><circle cx="72" cy="28" r="8.5" fill="currentColor"/><circle cx="50" cy="50" r="8.5" fill="currentColor"/><circle cx="28" cy="72" r="8.5" fill="currentColor"/><circle cx="72" cy="72" r="8.5" fill="currentColor"/></svg><svg viewBox="0 0 100 100" width="40" height="40" role="img" aria-label="die showing 5"><rect x="4" y="4" width="92" height="92" rx="18" fill="none" stroke="currentColor" stroke-width="6"/><circle cx="28" cy="28" r="8.5" fill="currentColor"/><circle cx="72" cy="28" r="8.5" fill="currentColor"/><circle cx="50" cy="50" r="8.5" fill="currentColor"/><circle cx="28" cy="72" r="8.5" fill="currentColor"/><circle cx="72" cy="72" r="8.5" fill="currentColor"/></svg><svg viewBox="0 0 100 100" width="40" height="40" role="img" aria-label="die showing 1"><rect x="4" y="4" width="92" height="92" rx="18" fill="none" stroke="currentColor" stroke-width="6"/><circle cx="50" cy="50" r="8.5" fill="currentColor"/></svg><svg viewBox="0 0 100 100" width="40" height="40" role="img" aria-label="die showing 5"><rect x="4" y="4" width="92" height="92" rx="18" fill="none" stroke="currentColor" stroke-width="6"/><circle cx="28" cy="28" r="8.5" fill="currentColor"/><circle cx="72" cy="28" r="8.5" fill="currentColor"/><circle cx="50" cy="50" r="8.5" fill="currentColor"/><circle cx="28" cy="72" r="8.5" fill="currentColor"/><circle cx="72" cy="72" r="8.5" fill="currentColor"/></svg><svg viewBox="0 0 100 100" width="40" height="40" role="img" aria-label="die showing 2"><rect x="4" y="4" width="92" height="92" rx="18" fill="none" stroke="currentColor" stroke-width="6"/><circle cx="28" cy="28" r="8.5" fill="currentColor"/><circle cx="72" cy="72" r="8.5" fill="currentColor"/></svg><svg viewBox="0 0 100 100" width="40" height="40" role="img" aria-label="die showing 2"><rect x="4" y="4" width="92" height="92" rx="18" fill="none" stroke="currentColor" stroke-width="6"/><circle cx="28" cy="28" r="8.5" fill="currentColor"/><circle cx="72" cy="72" r="8.5" fill="currentColor"/></svg><svg viewBox="0 0 100 100" width="40" height="40" role="img" aria-label="die showing 3"><rect x="4" y="4" width="92" height="92" rx="18" fill="none" stroke="currentColor" stroke-width="6"/><circle cx="28" cy="28" r="8.5" fill="currentColor"/><circle cx="50" cy="50" r="8.5" fill="currentColor"/><circle cx="72" cy="72" r="8.5" fill="currentColor"/></svg><span class="fell">&hellip;</span></div><p class="fnote">This example follows a 24-word seed the whole way through.</p></div></div>
+<div class="fstep"><div class="fbadge">2</div><div class="fbody"><p class="flabel">Write the digits down</p><div class="fdatum">655152231316521321611331544441236164664431121534415633526456254462245546236542364246312613322234612</div></div></div>
+<div class="fstep"><div class="fbadge">3</div><div class="fbody"><p class="flabel">Hash the digits once with SHA-256</p><div class="fdatum frepl"><span class="fprompt">&gt;&gt;&gt;</span> sha256(<span class="fstr">"655152231316521321611331544441236164664431&hellip;"</span>)
+<span class="fout">51531761ec7a738946e0b9f46bb11320a695495430e345c14f01ad8b3b898a6d</span></div><p class="fnote">The quotation marks matter: the digits go in as text. The result is always 32 bytes, regardless of how long the input was. For a 12-word seed, only the first 16 are used.</p></div></div>
+<div class="fstep"><div class="fbadge">4</div><div class="fbody"><p class="flabel">Write those bytes out in binary</p><div class="fbytes"><span class="fbyte"><i>51</i>01010001</span><span class="fbyte"><i>53</i>01010011</span><span class="fbyte"><i>17</i>00010111</span><span class="fbyte"><i>61</i>01100001</span><span class="fbyte"><i>ec</i>11101100</span><span class="fell">&hellip;</span></div><p class="fnote">Each byte is eight bits. Nothing has changed yet, the same hash, written differently.</p></div></div>
+<div class="fstep"><div class="fbadge">5</div><div class="fbody"><p class="flabel">Collect the bits into groups of 11</p><div class="fregroup"><span class="g0">01010001010</span><span class="g1">10011000101</span><span class="g0">11011000011</span><span class="fell">&hellip;</span></div></div></div>
+<div class="fstep"><div class="fbadge">6</div><div class="fbody"><p class="flabel">Look each group up in the BIP-39 word list</p><div class="fgroups"><div class="frow"><code>01010001010</code><span class="farr">&rarr;</span><code class="fidx">650</code><span class="fplus">+1</span><code class="fidx">651</code><span class="farr">&rarr;</span><strong>eyebrow</strong></div><div class="frow"><code>10011000101</code><span class="farr">&rarr;</span><code class="fidx">1221</code><span class="fplus">+1</span><code class="fidx">1222</code><span class="farr">&rarr;</span><strong>obvious</strong></div><div class="frow"><code>11011000011</code><span class="farr">&rarr;</span><code class="fidx">1731</code><span class="fplus">+1</span><code class="fidx">1732</code><span class="farr">&rarr;</span><strong>such</strong></div><div class="frow"><code>11011000111</code><span class="farr">&rarr;</span><code class="fidx">1735</code><span class="fplus">+1</span><code class="fidx">1736</code><span class="farr">&rarr;</span><strong>suggest</strong></div><div class="frow fmore">&hellip; 20 more</div></div><p class="fnote">Each group is a number from 0 to 2047. The +1 accounts for printed word lists, which start counting at 1 rather than 0. The final group carries a checksum.</p></div></div>
+<div class="fstep"><div class="fbadge">7</div><div class="fbody"><p class="flabel">Build the final word</p><div class="fck"><div class="fckrow"><span class="fcklbl">The entropy ends in <code>6d</code>, and 23 words have used all but its last 3 bits</span><span class="fckval"><code class="dim">01101</code><code class="ent">101</code></span></div><div class="fckrow"><span class="fcklbl">Hash the entropy itself, and keep the first byte</span><span class="fckval"><code class="dim">sha256(entropy) =</code><code class="chk">86</code><code class="dim">7da839c3&hellip;</code></span></div><div class="fckrow"><span class="fcklbl">That byte in binary is the checksum</span><span class="fckval"><code class="chk">10000110</code></span></div><div class="fckrow tot"><span class="fcklbl">3 left over plus 8 checksum makes the last 11 bits</span><span class="fckval"><code class="ent">101</code><code class="chk">10000110</code><span class="farr">&rarr;</span><code class="fidx">1414</code><span class="fplus">+1</span><code class="fidx">1415</code><span class="farr">&rarr;</span><strong>radio</strong></span></div></div><p class="fnote">This is why the last word cannot be chosen freely.</p></div></div>
+<div class="fstep"><div class="fbadge">8</div><div class="fbody"><p class="flabel">Read off the words</p><div class="fchips"><span class="fchip"><i>1</i>eyebrow</span><span class="fchip"><i>2</i>obvious</span><span class="fchip"><i>3</i>such</span><span class="fchip"><i>4</i>suggest</span><span class="fchip"><i>5</i>poet</span><span class="fchip"><i>6</i>seven</span><span class="fchip"><i>7</i>breeze</span><span class="fchip"><i>8</i>blame</span><span class="fchip"><i>9</i>virtual</span><span class="fchip"><i>10</i>frown</span><span class="fchip"><i>11</i>dynamic</span><span class="fchip"><i>12</i>donor</span><span class="fchip"><i>13</i>harsh</span><span class="fchip"><i>14</i>pigeon</span><span class="fchip"><i>15</i>express</span><span class="fchip"><i>16</i>broccoli</span><span class="fchip"><i>17</i>easy</span><span class="fchip"><i>18</i>apology</span><span class="fchip"><i>19</i>scatter</span><span class="fchip"><i>20</i>force</span><span class="fchip"><i>21</i>recipe</span><span class="fchip"><i>22</i>shadow</span><span class="fchip"><i>23</i>claim</span><span class="fchip"><i>24</i>radio</span></div><p class="fnote">Any implementation of this recipe gives the same 24 words from the same rolls.</p></div></div>
+</div>
+
+<h3 id="why-50-and-99-rolls"><a class="anchor" href="#why-50-and-99-rolls">Why 50 and 99 rolls</a></h3>
+<p>A die has six faces, so <strong>N rolls produce 6<sup>N</sup> possible sequences</strong>. The
+only question is whether that is as many as there are possible seeds.</p>
+<div class="tablewrap">
+<table>
+  <thead><tr><th></th><th>Possible dice sequences</th><th>Possible seeds</th><th></th></tr></thead>
+  <tbody>
+    <tr><td><strong>50 rolls</strong> &rarr; 12 words</td><td>6<sup>50</sup> &asymp; 8.1 &times; 10<sup>38</sup></td><td>2<sup>128</sup> &asymp; 3.4 &times; 10<sup>38</sup></td><td class="num">129.2 bits, over the 128 needed</td></tr>
+    <tr><td><strong>99 rolls</strong> &rarr; 24 words</td><td>6<sup>99</sup> &asymp; 1.1 &times; 10<sup>77</sup></td><td>2<sup>256</sup> &asymp; 1.2 &times; 10<sup>77</sup></td><td class="num">255.9 of 256 bits</td></tr>
+  </tbody>
+</table>
+</div>
+<p>50 rolls comfortably exceeds what a 12-word seed needs. 99 rolls lands at <strong>255.9 bits
+against 256</strong>, a 100th roll would push past what a 256-bit seed can hold.</p>
+<figure>
+<figcaption>Bit figures throughout assume SHA-256 behaves as an ideal randomness extractor, so N
+rolls carrying H bits each yield min(256, N&middot;H). Standard practice, and the margins here are
+far too large for the difference to matter.</figcaption>
+</figure>
+
+
+<h2 id="implementations"><a class="anchor" href="#implementations"><span class="num">3</span>Who implements it</a></h2>
+<p>Each was read from source at a pinned commit, not from documentation.</p>
+<div class="tablewrap">
+<table>
+  <thead><tr><th>Implementation</th><th>Language</th><th>Source</th></tr></thead>
+  <tbody>
+    <tr><td colspan="3"><span class="tag">Signing devices and air-gapped apps, where seeds get generated</span></td></tr>
+    <tr><td><strong>Coldcard</strong></td><td>MicroPython</td><td><a href="https://github.com/Coldcard/firmware/blob/3238f6fd/shared/seed.py">Coldcard/firmware @ 3238f6fd</a></td></tr>
+    <tr><td><strong>Kern</strong></td><td>C</td><td><a href="https://github.com/odudex/Kern/blob/0.0.15/main/pages/new_mnemonic/dice_rolls.c">odudex/Kern</a></td></tr>
+    <tr><td><strong>Krux</strong></td><td>MicroPython</td><td><a href="https://github.com/selfcustody/krux/blob/7ea3f95eff1eafa5c159f951425ee537df2a08c2/src/krux/pages/new_mnemonic/dice_rolls.py">selfcustody/krux</a></td></tr>
+    <tr><td><strong>SeedSigner</strong></td><td>Python</td><td><a href="https://github.com/SeedSigner/seedsigner/blob/0.8.7/src/seedsigner/helpers/mnemonic_generation.py#L64-L81">SeedSigner @ 0.8.7</a></td></tr>
+    <tr><td><strong>AirGap Vault</strong><br><span style="font-size:12px;color:var(--muted)">Default mode, 24 words only</span></td><td>TypeScript</td><td><a href="https://github.com/airgap-it/airgap-vault/blob/aa50b7f0371ed2e681f358d22b546c7c000e05b7/src/app/services/dice-roll/dice-roll.service.ts#L39-L54">airgap-vault @ aa50b7f</a></td></tr>
+    <tr><td colspan="3"><span class="tag">Software tools, for independently checking one</span></td></tr>
+    <tr><td><strong>Gordian seedtool-cli</strong></td><td>C++</td><td><a href="https://github.com/BlockchainCommons/seedtool-cli/blob/b79d02fb6d936921dd36c08c3994bfd155ee7288/src/format-dice.cpp">BlockchainCommons/seedtool-cli</a>, CLI</td></tr>
+    <tr><td><strong>Gordian Seed Tool</strong><br><span style="font-size:12px;color:var(--muted)">iOS app, 12 words only</span></td><td>Swift</td><td><a href="https://github.com/BlockchainCommons/GordianSeedTool-iOS/blob/ec0a86f256e6761ce0511453ecb5f9ab6686c8f5/SeedTool/Entropy/Tokens/DieToken.swift#L84-L91">GordianSeedTool-iOS @ 1.6</a></td></tr>
+    <tr><td><strong>iancoleman.io</strong><br><span style="font-size:12px;color:var(--muted)">Hex or Base 10 mode</span></td><td>JavaScript</td><td><a href="https://github.com/iancoleman/bip39/blob/de71c22328b24e0848bbe1bd12ac8974ca83b5b8/src/js/entropy.js">iancoleman/bip39</a>, web or signed download</td></tr>
+    <tr><td><strong>Seed Tool</strong></td><td>JavaScript</td><td><a href="https://github.com/BitcoinQnA/seedtool/tree/dac9c8880d45fef4f5c5fceda5ec6fc899ea386a">BitcoinQnA/seedtool</a>, web or signed download</td></tr>
+  </tbody>
+</table>
+</div>
+<figure>
+<figcaption>Two carry limits worth knowing before you rely on them. <strong>AirGap Vault</strong>
+requires 99 rolls and produces only 24 words, with no 50-roll path. <strong>Gordian Seed Tool for
+iOS</strong> is the mirror image: it always truncates to 16 bytes, so its dice mode produces only 12
+words however many times you roll.</figcaption>
+</figure>
+
+<p><strong>If the wallet you are looking for is not in this table, start with the
+<a href="#addendum">addendum</a>.</strong> Keystone, BlueWallet, BitBox02, Blockstream Jade and
+Foundation Passport all offer something for hand-rolled seeds, but not this recipe.</p>
+
+<div class="note warn">
+  <span class="tag">Appearing in this table is not a recommendation</span>
+  <p>Coldcard is here because its construction is the one several of these projects converged on,
+  and because it is the implementation this document checks the recipe against. That is a statement
+  about one hashing routine, not about the device. After the entropy failure disclosed on 1 August
+  2026, set out in <a href="#trust">&sect;7</a>, this document treats Coldcard as a reference for
+  the construction and as part of its history, not as a live option for new storage.</p>
+  <p>The same separation applies to every row. What is verified here is that a given implementation
+  turns your rolls into the same seed as the others. Nothing about that speaks to the rest of a
+  device, its firmware, or the parts of it a dice roll never touches.</p>
+</div>
+
+<div class="note warn">
+  <span class="tag">Run the web tools offline</span>
+  <p>The two browser tools ship signed standalone builds with PGP signatures: iancoleman's
+  <code>bip39-standalone.html</code> and Seed Tool's <code>index.html</code>. A URL is fine for a
+  try. For anything real: download, verify, disconnect.</p>
+</div>
+
+<p><strong>One caveat, and it matters:</strong> iancoleman.io reproduces the recipe in its
+<strong>Hex</strong> and <strong>Base 10</strong> modes. Its <em>Dice</em> mode uses a different
+approach and gives a different seed.</p>
+
+<p class="pull">Many implementations, many languages, <em>one recipe</em>, with no
+specification, but a reference implementation several of these projects deliberately matched.</p>
+
+<p><strong>This is not blind convergence</strong>, and presenting it as such would be misleading.
+iancoleman.io functions as the de-facto reference: seedtool-cli's source carries the comment
+<em>&ldquo;Compatibility with iancoleman.io/bip39&rdquo;</em>, SeedSigner's docstring cites
+iancoleman and Seed Tool as its model, and Seed Tool is code-derived from iancoleman. At least
+three deliberately targeted it. Krux and Kern share an author, and both Gordian tools come from
+Blockchain Commons, so treat each of those as one lineage.</p>
+<p>The recipe has also left Bitcoin. <a href="https://github.com/lightsail-network/lumensigner">LumenSigner</a>,
+a SeedSigner fork for Stellar, carries the function across essentially unchanged. That is worth
+knowing for what it says about how a convention spreads: by being copied, not by being
+specified.</p>
+
+<p><strong>Roll once, verify anywhere.</strong> The same rolls give the same seed on any of these,
+so checking your wallet against one is a real cross-implementation test, not the same code
+twice.</p>
+
+<h2 id="quality"><a class="anchor" href="#quality"><span class="num">4</span>Does dice quality matter?</a></h2>
+<p>The honest measure is <strong>min-entropy</strong>, conservative, assuming an attacker
+knows your die's exact bias and always guesses the most likely sequences first. Every figure below
+already assumes that worst case.</p>
+
+<figure>
+<p class="fnote" style="margin:0 0 4px"><span style="color:var(--accent)">&#9632;</span> 24-word (99 rolls)
+&nbsp;&nbsp;<span style="color:var(--muted)">&#9632;</span> 12-word (50 rolls)</p>
+<p class="fnote" style="margin:14px 0 0;color:var(--ink)">A perfectly fair die <span style="float:right;font-family:var(--mono);color:var(--muted)">255.9 / 128.0 bits</span></p><div class="bar"><i style="left:0;width:99.9%"></i><i class="b12" style="left:0;width:50.0%"></i><u style="left:50%"></u><u class="floor" style="left:39.06%"></u></div><p class="fnote" style="margin:14px 0 0;color:var(--ink)">One face 8% more often than it should <span style="float:right;font-family:var(--mono);color:var(--muted)">244.9 / 123.7 bits</span></p><div class="bar"><i style="left:0;width:95.7%"></i><i class="b12" style="left:0;width:48.3%"></i><u style="left:50%"></u><u class="floor" style="left:39.06%"></u></div><p class="fnote" style="margin:14px 0 0;color:var(--ink)">20% more often, visibly odd <span style="float:right;font-family:var(--mono);color:var(--muted)">229.9 / 116.1 bits</span></p><div class="bar"><i style="left:0;width:89.8%"></i><i class="b12" style="left:0;width:45.4%"></i><u style="left:50%"></u><u class="floor" style="left:39.06%"></u></div><p class="fnote" style="margin:14px 0 0;color:var(--ink)">50% more often, obviously defective <span style="float:right;font-family:var(--mono);color:var(--muted)">198.0 / 100.0 bits</span></p><div class="bar"><i style="left:0;width:77.3%"></i><i class="b12" style="left:0;width:39.1%"></i><u style="left:50%"></u><u class="floor" style="left:39.06%"></u></div><p class="fnote" style="margin:14px 0 0;color:var(--ink)">110% more often, grossly loaded <span style="float:right;font-family:var(--mono);color:var(--muted)">149.9 / 75.7 bits</span></p><div class="bar"><i style="left:0;width:58.6%"></i><i class="b12" style="left:0;width:29.6%"></i><u style="left:50%"></u><u class="floor" style="left:39.06%"></u></div><p class="fnote" style="margin:14px 0 0;color:var(--ink)">Half of all rolls, a trick die <span style="float:right;font-family:var(--mono);color:var(--muted)">99.0 / 50.0 bits</span></p><div class="bar"><i style="left:0;width:38.7%"></i><i class="b12" style="left:0;width:19.5%"></i><u style="left:50%"></u><u class="floor" style="left:39.06%"></u></div>
+<figcaption>Bars scaled to 256 bits. Solid line: the 128-bit &ldquo;secure forever&rdquo;
+threshold. Dashed line: a 100-bit practical floor, still far beyond any attacker. The 24-word bar
+clears both until the die is a trick die.</figcaption>
+</figure>
+
+<p>For a 24-word seed to fall even to 128 bits, one face would have to come up <strong>40.8% of
+the time</strong>, about two and a half times its fair share. Not a slightly warped die;
+one you would notice in an evening of board games.</p>
+
+<div class="note pass">
+  <span class="tag">The detection paradox</span>
+  <p>Take a die favoring one face 8% more than it should. It costs a 24-word seed
+  <strong>11 bits</strong>, leaving 245 of 256. To <em>detect</em> that bias with statistical
+  confidence you would need roughly <strong>6,200 rolls.</strong></p>
+  <p>You would roll for hours to find a defect worth a rounding error. And the arithmetic runs the
+  other way too: <strong>any bias large enough to matter is large enough to notice casually.</strong></p>
+</div>
+
+<h3 id="the-ten-dice-in-a-box-method"><a class="anchor" href="#the-ten-dice-in-a-box-method">The ten-dice-in-a-box method</a></h3>
+<p>A common recommendation is to put ten dice of any quality in a box, shake, and read them left to
+right. It helps, for a reason worth understanding: after a shake, <em>which physical die lands in
+which position is itself random</em>, so each reading is drawn from the <strong>average</strong> of
+the pool's ten distributions, and averaging independent biases pulls that mixture toward uniform.</p>
+<div class="tablewrap">
+<table>
+  <thead><tr><th>Dice quality</th><th>One die, repeatedly</th><th>Pool of ten</th><th>Regained</th></tr></thead>
+  <tbody>
+    <tr><td>Very good</td><td>2.496</td><td>2.556</td><td class="num">+0.060</td></tr>
+    <tr><td>Ordinary</td><td>2.333</td><td>2.501</td><td class="num">+0.168</td></tr>
+    <tr><td>Poor</td><td>2.118</td><td>2.421</td><td class="num">+0.303</td></tr>
+    <tr><td>Bad</td><td>1.889</td><td>2.314</td><td class="num">+0.425</td></tr>
+  </tbody>
+</table>
+</div>
+<figure>
+<figcaption>Min-entropy in bits per roll; a perfectly fair die scores 2.585. Modeling caveat:
+this treats each reading as an independent draw from the averaged distribution. A shake reads each
+die exactly once, so a block of ten is slightly more predictable than the model implies,
+negligible for mild bias, more material for badly skewed dice. Figures are means over
+randomly-generated dice, not a guarantee for yours.</figcaption>
+</figure>
+
+<div class="note warn">
+  <span class="tag">The honest limit</span>
+  <p>Averaging cancels bias only when the biases <em>differ</em>. Ten identical dice from one bag
+  sharing a manufacturing defect average to exactly the same defect, simulated, and the gain
+  is precisely zero. Use a mixed handful if you can.</p>
+</div>
+<p>The bigger win is speed: <strong>ten shakes instead of 99 rolls</strong>. Tedium is a real risk:
+bored people start placing dice by hand. One caveat: <strong>shake hard</strong>, or faces
+repeat between readings.</p>
+
+<h3 id="what-to-actually-do"><a class="anchor" href="#what-to-actually-do">What to actually do</a></h3>
+<ol>
+  <li><strong>Don't test your dice.</strong> The arithmetic above shows it cannot pay off.</li>
+  <li><strong>If you're worried, choose 24 words.</strong> The extra 49 rolls buy enormous headroom.</li>
+  <li><strong>The ten-dice box method is a good one</strong>, mostly for speed, with a real
+    if modest bias-averaging bonus. Mixed handful, vigorous shake.</li>
+  <li><strong>Just roll normally.</strong> Toss it so it tumbles, let it settle. Casinos make dice
+    hit a studded back wall because they face professionals deliberately controlling throws for
+    money, you have no reason to cheat yourself.</li>
+</ol>
+
+<h2 id="more"><a class="anchor" href="#more"><span class="num">5</span>Why not roll more than 99?</a></h2>
+<p>Advice to roll 120 or 150 times circulates, on the theory that extra rolls buy margin against an
+imperfect die.</p>
+<p><strong>With a fair die there is a ceiling.</strong> A 24-word seed is 256 bits, and 99 fair
+rolls already deliver 255.9 of them. Roll 150 times and you feed 388 bits into a hash that can only
+emit 256, the surplus is discarded.</p>
+<p><strong>With a biased die, extra rolls do restore what bias costs</strong>, this is worth
+stating plainly rather than pretending otherwise:</p>
+<div class="tablewrap">
+<table>
+  <thead><tr><th>If your die is</th><th>99 rolls gives</th><th>Rolls to reach a full 256</th></tr></thead>
+  <tbody>
+    <tr><td>Fair</td><td>255.9 bits</td><td class="num">100</td></tr>
+    <tr><td>8% biased</td><td>244.9 bits</td><td class="num">104</td></tr>
+    <tr><td>20% biased</td><td>229.9 bits</td><td class="num">111</td></tr>
+    <tr><td>50% biased, obviously defective</td><td>198.0 bits</td><td class="num">128</td></tr>
+  </tbody>
+</table>
+</div>
+<p>So the argument against rolling more is <strong>not</strong> that it does nothing. It is that
+the thing it buys back is not worth buying: 245 bits against a 100-bit floor. More rolls also means
+more tedium, and tedium produces the rushed throws that are a far bigger risk than any
+manufacturing tolerance.</p>
+<p class="pull">99 is not a floor to exceed for safety; it is the number that fills the seed.</p>
+
+<h2 id="guards"><a class="anchor" href="#guards"><span class="num">6</span>Guarding against bad rolls</a></h2>
+<p>None of the above addresses a different problem: someone who types the same digit fifty times,
+or an obvious pattern. Implementations differ on whether they try to catch this.</p>
+<div class="tablewrap">
+<table>
+  <thead><tr><th>Implementation</th><th>Guard</th></tr></thead>
+  <tbody>
+    <tr><td>Krux</td><td>Live Shannon-entropy meter against the 128/256-bit threshold, arithmetic-pattern detector, distribution graph, all overridable</td></tr>
+    <tr><td>Coldcard</td><td>Rejects if any single face exceeds 30% of rolls when generating from dice. No check at all on the path that mixes rolls into an existing seed.</td></tr>
+    <tr><td>Keystone</td><td>Warns if any single face exceeds 30% of rolls, but the warning is advisory only and Confirm stays live</td></tr>
+    <tr><td>Seed Tool</td><td>Refuses fewer than the minimum roll count</td></tr>
+    <tr><td>SeedSigner, Kern</td><td>None beyond enforcing the roll count</td></tr>
+    <tr><td>AirGap Vault</td><td>None beyond the 99-roll minimum, plus an explicit refusal to hash an empty string</td></tr>
+    <tr><td>BlueWallet</td><td class="weak">None, and no minimum either; under-rolling silently tops up from the phone's RNG after a dialog</td></tr>
+    <tr><td>Gordian seedtool-cli</td><td class="weak">None, it does not enforce a roll count either, and will derive a seed from five rolls</td></tr>
+  </tbody>
+</table>
+</div>
+
+<div class="note warn">
+  <span class="tag">A guard you generate under is not a guard you mix under</span>
+  <p>Where a device checks your rolls at all, it may only do so on the path that generates a seed
+  from dice alone. Coldcard's checks do not run on the path that mixes rolls into a seed it already
+  made, and that is the path popular third-party guides tend to point at. Mixing also costs the
+  property dice were for, which <a href="#trust">&sect;7</a> takes up.</p>
+</div>
+
+<figure>
+<figcaption>Roll-count enforcement is the guard that has actually mattered. Keystone shipped a
+defect from its first dice release until version 2.5.0 in June 2026: the 24-word path had no
+roll-count check, so 50 rolls carrying about 129 bits could mint a phrase presented as 256-bit. Note
+also that Keystone requires <strong>100</strong> rolls for 24 words rather than 99, while its own
+documentation still says 99.</figcaption>
+</figure>
+
+<h3 id="why-the-obvious-guard-doesn-t-work"><a class="anchor" href="#why-the-obvious-guard-doesn-t-work">Why the obvious guard doesn't work</a></h3>
+<p>Both common approaches, a face-frequency limit and a Shannon-entropy score, measure
+<em>which faces appeared</em>. Neither sees <em>what order they appeared in</em>.</p>
+<div class="tablewrap">
+<table>
+  <thead><tr><th>What you typed</th><th>Shannon</th><th>Top face</th><th>Coldcard 30%</th><th>Compression</th></tr></thead>
+  <tbody>
+    <tr><td><code>666666&hellip;</code></td><td>0.000</td><td>100%</td><td class="num">caught</td><td class="num">caught</td></tr>
+    <tr><td><code>121212&hellip;</code></td><td>1.000</td><td>50.5%</td><td class="num">caught</td><td class="num">caught</td></tr>
+    <tr><td><code>123123123&hellip;</code></td><td>1.585</td><td>33.3%</td><td class="num">caught</td><td class="num">caught</td></tr>
+    <tr><td><code>123456123456&hellip;</code></td><td>2.584</td><td>17.2%</td><td class="weak">passes</td><td class="num">caught</td></tr>
+    <tr><td>a real fair sequence</td><td>2.509</td><td>25.3%</td><td class="num">allowed</td><td class="num">allowed</td></tr>
+  </tbody>
+</table>
+</div>
+<p class="pull">Both scoring approaches share the same gap, <em>they measure which faces
+appeared</em>, not in what order.</p>
+<p>Krux is the exception, and only partly: alongside its Shannon meter it runs a
+derivative-based check that flags arithmetic progressions, so it catches the row below that the
+scores alone do not. A face-frequency limit or an entropy score, on its own, does not.</p>
+<p>Rolling 1-2-3-4-5-6 repeatedly gives every face its exact fair share, so it scores essentially
+maximum while being entirely predictable. A compression check sees it, because repetition
+compresses whether or not the distribution looks uniform.</p>
+
+<h3 id="and-it-can-t-detect-a-biased-die-anyway"><a class="anchor" href="#and-it-can-t-detect-a-biased-die-anyway">And it can't detect a biased die anyway</a></h3>
+<p>With only 50 or 99 samples the estimate is far too noisy. At a threshold tuned to falsely warn
+1 honest user in 1,000, at 99 rolls a Shannon score catches a die favoring one face 50% more often
+just <strong>3.9%</strong> of the time. A related subtlety: <strong>a fair die does not score
+2.585.</strong></p>
+<div class="tablewrap">
+<table>
+  <thead><tr><th></th><th>Fair-die average</th><th>Spread to 0.1st pct</th><th>Usable threshold</th></tr></thead>
+  <tbody>
+    <tr><td>99 rolls</td><td>2.548</td><td>0.114 bits</td><td>2.434</td></tr>
+    <tr><td>50 rolls</td><td>2.511</td><td>0.235 bits</td><td>2.276</td></tr>
+  </tbody>
+</table>
+</div>
+<p>Coldcard's fixed 30% threshold shows the same tension from the other side: it falsely warns
+<strong>3.4% of honest users at 50 rolls</strong>, against 0.33% at 99.</p>
+<p>This is the detection paradox again, and it resolves itself: these checks miss exactly the biases
+that don't matter. <strong>A roll-quality guard should catch patterned input, not judge your
+dice</strong>. Compression does that better than either approach, with fewer false alarms.</p>
+
+<h2 id="trust"><a class="anchor" href="#trust"><span class="num">7</span>What you still have to trust</a></h2>
+<p><strong>Dice very nearly remove trust from seed generation.</strong> Not entirely: no seed
+produced on a device somebody else built can be perfectly trustless. But what is left over is a
+narrow and specific residue, not the broad act of faith that &ldquo;trusting your hardware
+wallet&rdquo; usually describes. Once you have tested the device's arithmetic often enough to
+satisfy yourself, and checked its answer, essentially nothing about the seed itself still rests on
+the manufacturer's word. How many runs count as enough is a real question, and it is taken up
+below.</p>
+<p>This section is about the residue, and it is deliberately unflattering about it.</p>
+
+<h3 id="the-claim-a-dice-seed-makes"><a class="anchor" href="#the-claim-a-dice-seed-makes">The claim a dice seed makes</a></h3>
+<p>When a device shows you 24 words after 99 rolls, it is asserting exactly one thing:</p>
+<blockquote><p>These words are the BIP-39 encoding of SHA-256 over the 99 digits you just
+entered.</p></blockquote>
+<p>That assertion is <strong>falsifiable</strong>. There is one correct answer, it does not depend
+on anything the device knows, and anyone holding the rolls can compute it. If the device produces
+anything else, it is caught.</p>
+
+<h3 id="testing-the-device-costs-you-nothing"><a class="anchor" href="#testing-the-device-costs-you-nothing">Testing the device costs you nothing</a></h3>
+<p>The useful consequence is that <strong>you can check the device as often as you like, with rolls
+that protect nothing.</strong> Type in fifty arbitrary digits, read the words off the screen, and
+compute the same thing somewhere else. Then do it again with different digits. The input is
+throwaway, so this can be done on any computer, connected, carelessly, as many times as your
+patience allows.</p>
+<p>Each pass rules out a little more. A device that returns the expected answer run after run, for
+inputs it had no way to anticipate, is behaving as a deterministic function of what you typed and
+nothing else. Enough passes and <em>this device implements the recipe faithfully</em> stops being
+something you assume about the manufacturer and becomes something you measured yourself.</p>
+<p class="pull">After enough test runs the device is not something you trust. It is a tool you have
+checked, running the same arithmetic any other tool runs.</p>
+<p>This is the part people miss about dice. The value is not only that one seed can be verified. It
+is that the device's <em>behavior</em> can be verified, repeatedly and for free, without a single
+real seed ever leaving the room.</p>
+
+<div class="note warn">
+  <span class="tag">Why &ldquo;to a rough approximation&rdquo;</span>
+  <p>Test runs cannot strictly prove the run that matters, because a device only has to tell the
+  runs apart. <strong>The cheapest version of this is to answer honestly the first few times and
+  then defect</strong>, which costs an attacker a counter and nothing else. Two or three passes buy
+  you very little. This is the argument for testing more than feels necessary, and for not doing all
+  your testing in one sitting on a fresh device.</p>
+  <p>Beyond a counter, a device would need some other trigger to pick its moment: a clock, a
+  particular roll pattern, a state it can only be in once. Each is a narrower and stranger thing to
+  build than a device that is simply wrong, and you can narrow it further by making the real run
+  look like all the others.</p>
+  <p>That residue does not get closed by checking your real seed somewhere else. Doing so opens a
+  larger hole than it fills, for reasons set out below. It is accepted knowingly, in exchange for
+  never entering the real rolls into a second machine at all.</p>
+</div>
+
+<h3 id="what-testing-settles-and-what-it-leaves-open"><a class="anchor" href="#what-testing-settles-and-what-it-leaves-open">What testing settles, and what it leaves open</a></h3>
+<div class="tablewrap">
+<table>
+  <thead><tr><th>Question</th><th></th><th>Why</th></tr></thead>
+  <tbody>
+    <tr><td>Did the device use my rolls, and <em>only</em> my rolls?</td><td class="num">settled</td><td>The recipe has no free parameters. There is nowhere to mix in an extra byte without changing every word.</td></tr>
+    <tr><td>Did the device implement the recipe correctly?</td><td class="num">settled</td><td>A truncation error, a remapped 6, a stray newline: each changes the output completely.</td></tr>
+    <tr><td>Did I enter the rolls I wrote down?</td><td class="num">settled</td><td>A mistyped digit changes every word. Where the device lets you enter the rolls again, repeating them and comparing catches this without involving a second machine.</td></tr>
+    <tr><td>Is the device's random number generator sound?</td><td class="num">not asked</td><td>A pure dice seed never touches it. That is the point of the exercise.</td></tr>
+    <tr><td>Are my dice fair?</td><td class="weak">open</td><td>Nothing in the output reveals the physical dice. See <a href="#quality">&sect;4</a>: the cost of imperfect dice is small enough to ignore.</td></tr>
+    <tr><td>Did the device keep or transmit a copy of my seed?</td><td class="weak">open</td><td>Correctness and confidentiality are unrelated. A device can compute the right answer and still copy it.</td></tr>
+    <tr><td>Will the device sign with the seed it displayed?</td><td class="weak">open</td><td>A separate question, answered by deriving an address independently and comparing.</td></tr>
+    <tr><td>Is the device running the firmware that was published?</td><td class="weak">open</td><td>A separate question, answered by signed releases and reproducible builds.</td></tr>
+  </tbody>
+</table>
+</div>
+
+<div class="note warn">
+  <span class="tag">The limit worth stating twice</span>
+  <p><strong>A compromised device passes this check.</strong> Verification catches a device that
+  lies about your seed. It cannot catch one that computes your seed correctly and also keeps a
+  copy.</p>
+  <p>Everything protecting you there is separate: no wireless hardware, an air gap you actually
+  maintain, signed firmware, a supply chain you have some reason to believe in, and physical control
+  of the device. Dice make the arithmetic checkable. They do not make the machine trustworthy.</p>
+</div>
+
+<h3 id="two-checks-that-get-confused"><a class="anchor" href="#two-checks-that-get-confused">Two checks that get confused</a></h3>
+<p>These sound alike, prove very different things, and only one of them is a good idea.</p>
+<div class="tablewrap">
+<table>
+  <thead><tr><th></th><th>Testing the device</th><th>Checking your real seed elsewhere</th></tr></thead>
+  <tbody>
+    <tr><td>Input</td><td>Throwaway rolls, or the published vectors (<a href="#spec">&sect;9</a>)</td><td>Your actual rolls and your actual words</td></tr>
+    <tr><td>Proves</td><td>A property of the <em>device</em></td><td>A property of <em>one event</em></td></tr>
+    <tr><td>How often</td><td>As often as you like</td><td class="weak">Not recommended at all</td></tr>
+    <tr><td>Cost if the checker is compromised</td><td>Nothing. The input was worthless.</td><td class="weak">Your seed, and everything it holds</td></tr>
+  </tbody>
+</table>
+</div>
+
+<div class="note warn">
+  <span class="tag">Do not verify a real seed on a second machine</span>
+  <p>It is the obvious move, and it is a bad trade. To check the seed protecting your funds you have
+  to type your real rolls into another computer, and that computer now knows your seed. You would be
+  exchanging a small residual doubt about a device you have tested for a fresh and unbounded exposure
+  to one you have not.</p>
+  <p><strong>Working offline does not fix this.</strong> An air-gapped machine can still keep what
+  you typed, and you have no way to know what it kept or who reads it later. The risk is not the
+  network, it is the second copy.</p>
+  <p>This is precisely what test runs are for. They establish the device as a faithful tool using
+  inputs worth nothing, so that the seed that matters is only ever entered once, in one place.</p>
+</div>
+
+<h3 id="verifying-means-trusting-the-checker-instead"><a class="anchor" href="#verifying-means-trusting-the-checker-instead">Verifying means trusting the checker instead</a></h3>
+<p>Comparing the device against a second implementation replaces one trusted program with another.
+That is only progress if the second one is independent and smaller, so it is worth being deliberate
+about:</p>
+<ul>
+  <li><strong>Independent is not the same as different.</strong> As <a href="#implementations">&sect;3</a>
+  notes, several of these implementations deliberately targeted iancoleman.io, and some share
+  authors. Two programs from one lineage agreeing tells you less than it appears to.</li>
+  <li><strong>Check the convention before you trust a mismatch.</strong> Test a Keystone against the
+  recipe in this document and not one of the 24 words will match, and nothing is wrong. That device
+  uses the other convention. A mismatch means <em>investigate</em>, not <em>panic</em>.</li>
+  <li><strong>The recipe is three lines.</strong> Hash a string, truncate, encode. A checker you
+  wrote yourself is a checker you do not have to trust.</li>
+  <li><strong>An AI will write you one in seconds</strong>, and this is the cheapest route to a
+  genuinely independent implementation, because one produced on demand shares no lineage with
+  anything in <a href="#implementations">&sect;3</a>. Ask for BIP-39 built from the specification
+  rather than from a library. What you want back is <em>source code you run yourself</em>, not an
+  answer. The prompt in <a href="#verify">&sect;8</a> asks for exactly this.</li>
+  <li><strong>Disagreement is the informative outcome.</strong> Two checkers agreeing is weak
+  evidence when they share code. Two disagreeing always means something is wrong, and finding out
+  which is cheap.</li>
+</ul>
+
+<div class="note warn">
+  <span class="tag">The AI writes the tool. The tool does the checking.</span>
+  <p><strong>Never type dice rolls into a chat prompt.</strong> Not real ones, and best not
+  throwaway ones either, so the habit never forms. What you are asking a model for is
+  <em>source code</em>, which you then run yourself on your own machine. It never needs to see a
+  single die.</p>
+  <p>The distinction is not pedantic. A chat prompt is a network service that transmits, logs and
+  retains. It is the worst place in this entire document to put anything touching a seed, worse than
+  the web tools <a href="#implementations">&sect;3</a> tells you to download rather than visit. An
+  AI-written checker is only independent because it runs where you are; typed into the chat, the
+  rolls have already left.</p>
+  <p>And the seed that matters goes into neither. It is entered on the device once, and nowhere
+  else. The checker exists to test the <em>device</em>, using inputs worth nothing.</p>
+</div>
+
+<div class="note warn">
+  <span class="tag">Make an AI checker prove itself first</span>
+  <p>A model will produce this in seconds and can be fluently, confidently wrong. The specific
+  failure to watch for is that it applies the 6-to-0 remap unprompted, because iancoleman's Dice
+  mode is well represented in training data and looks like the obvious reading of &ldquo;dice
+  entropy&rdquo;. It may also reach for a wallet library rather than implementing the
+  specification, which quietly reintroduces the lineage problem you were trying to escape.</p>
+  <p>So make it earn the role. Have it reproduce the <strong>official BIP-39 test vectors</strong>
+  before you show it a single die: a checker that cannot encode a known entropy value correctly
+  cannot tell you anything about your rolls. Then have it reproduce the vectors in
+  <a href="#spec">&sect;9</a>, and cross-check its output against a second implementation such as
+  Trezor's <code>python-mnemonic</code>.</p>
+  <p>Validated that way it is a strong extra witness, and a cheap one. Taken on its word it is worse
+  than no check at all, because it will agree with you either way.</p>
+</div>
+
+<div class="note warn">
+  <span class="tag">Mixing gives the property away</span>
+  <p>Some devices offer to blend your rolls into a seed the device generated, rather than using the
+  rolls alone. The result is then hashed from an input the device chose, so <strong>the check
+  described in this section no longer works</strong>: you cannot reproduce a seed whose starting
+  value you were never shown.</p>
+  <p>This is a genuine trade rather than a mistake: mixing protects you if your dice turn out to be
+  terrible, at the cost of the one property that made dice worth using. If you want a verifiable
+  seed, use the dice-only mode.</p>
+</div>
+
+<h3 id="the-counter-argument-stated-fairly"><a class="anchor" href="#the-counter-argument-stated-fairly">The counter-argument, stated fairly</a></h3>
+<p>Not everyone thinks the trade is worth it. Foundation, who make Passport, ship the final-word
+feature but advise against dice, and their then-head of strategy argued publicly in 2024 that they
+had heard of <em>zero</em> compromised seeds caused by hardware-wallet RNG failures, against
+repeated cases of users losing funds to botched dice procedures, one of them having used fewer than
+ten rolls.</p>
+<p>The half about botched procedure stands, and it is the real objection: dice move the risk onto
+the human, and humans skip steps. The other half was an argument from absence of evidence, and the
+evidence arrived. On 1 August 2026 Wizardsardine
+<a href="https://wizardsardine.com/blog/coldcard-rng-vulnerability/">disclosed</a> that Coldcard
+had shipped a broken entropy path since 2021, across the Mk2, Mk3, Mk4, Mk5 and Q. The defect has
+been fully verified, wallets were drained at scale, and most of the funds that were exposed are
+already gone. Coinkite issued emergency firmware on 31 July, which fixes generation from that point
+on and repairs nothing already generated.</p>
+<div class="note pass">
+  <span class="tag">What survived it</span>
+  <p>The disclosure draws one exception: <strong>seeds generated from 50 or more fair dice rolls
+  were not affected.</strong> That is this document's argument, tested against the largest
+  hardware-wallet entropy failure to date and coming through it. A seed the device chose was
+  compromised by a defect its owner had no way to see. A seed its owner rolled was not.</p>
+  <p>The exception is narrow and worth stating exactly. It covers the seed, not the device. The
+  disclosure is explicit that other features remain broken and that dice rolls do not protect you
+  there.</p>
+</div>
+<figure>
+<figcaption>Stated as a personal post on a third-party forum rather than company policy. The
+procedural half is undiminished, and the specific failure it describes is one the better
+implementations already prevent by refusing to proceed below the required roll count.</figcaption>
+</figure>
+
+<h3 id="the-bottom-line"><a class="anchor" href="#the-bottom-line">The bottom line</a></h3>
+<p>Generating a seed on any device normally requires trusting it on two counts: that it produced a
+good secret, and that it kept it. Dice plus verification eliminate the first and leave the second
+untouched.</p>
+<p class="pull">Verification proves the device did the right thing. It cannot prove the device did
+<em>nothing else</em>.</p>
+<p>What is left is narrow. Not <em>did this device make a good secret?</em> but <em>did it keep the
+one I made?</em> That is a single, well-understood question, and it is the one an air-gapped signing
+device is built to answer: no wireless hardware, no persistent storage, nothing to carry a secret
+out on. Turning the broad question into that narrow one is the whole benefit on offer, and it is a
+large benefit. It is simply not the same as zero.</p>
+
+<h2 id="verify"><a class="anchor" href="#verify"><span class="num">8</span>Verify it yourself</a></h2>
+<h3 id="by-hand-no-programming-about-ten-minutes"><a class="anchor" href="#by-hand-no-programming-about-ten-minutes">By hand, no programming, about ten minutes</a></h3>
+<ol>
+  <li>Take the published 99-roll example:<br>
+    <code style="word-break:break-all">655152231316521321611331544441236164664431121534415633526456254462245546236542364246312613322234612</code></li>
+  <li>Go to <a href="https://iancoleman.io/bip39">iancoleman.io/bip39</a>, ideally a downloaded
+    offline copy.</li>
+  <li>Tick <strong>Show entropy details</strong>.</li>
+  <li>Set the entropy type to <strong>Hex</strong>, <em>not</em> Dice.</li>
+  <li>Paste the digits and set Mnemonic Length to <strong>24 Words</strong>.</li>
+  <li>You should get: <em>eyebrow obvious such suggest poet seven breeze blame virtual frown
+    dynamic donor harsh pigeon express broccoli easy apology scatter force recipe shadow claim
+    radio</em></li>
+</ol>
+<div class="note warn">
+  <span class="tag">Never with a real seed</span>
+  <p>Use the published example above, or rolls of your own that protect nothing. <strong>Do not
+  enter the rolls or words of a seed holding real funds into any second tool, offline
+  included.</strong> Every copy is another place it can leak from, and an air-gapped machine keeps
+  what you type just as well as a networked one.</p>
+  <p>Everything worth learning here is learnable from throwaway inputs. See
+  <a href="#trust">&sect;7</a>.</p>
+</div>
+
+<h3 id="with-your-own-ai-assistant"><a class="anchor" href="#with-your-own-ai-assistant">With your own AI assistant</a></h3>
+<p>The goal is a <strong>checker you can run</strong>, not an answer from a chatbot. Ask it for
+code, run that code locally, and keep dice rolls out of the conversation entirely. Everything the
+model needs is in this page already.</p>
+<div class="note">
+  <span class="tag">Prompt</span>
+  <p>1. Implement BIP-39 from the specification, <strong>without using any wallet's code or
+  library</strong>, and prove it works by reproducing the official BIP-39 test vectors. Show me
+  that before going further.<br>
+  2. Explain how dice rolls become seed entropy in this construction, is the input hashed
+  as text, or converted numerically?<br>
+  3. Reproduce the two test vectors in &sect;9 with your implementation, then separately
+  cross-check them against Trezor's <code>python-mnemonic</code>.<br>
+  4. Check each implementation listed in &sect;3 against its own source. Do they agree?<br>
+  5. For each one, determine specifically whether it rewrites a 6 to a 0 before hashing, and show
+  the line that does or does not.<br>
+  6. Using min-entropy, compute what a biased die costs a 12- and 24-word seed, and how many rolls
+  would be needed to detect that bias.</p>
+</div>
+<p><strong>Step 1 is not optional.</strong> An unvalidated checker is not a second opinion, it is a
+second guess. Requiring the official vectors first is what makes the rest of the answer worth
+anything, and it catches the common failure of a model applying the 6-to-0 remap on its own
+initiative.</p>
+<p><strong>Do not let it answer step 4 with a keyword search.</strong> Searching firmware for
+&ldquo;dice&rdquo;
+case-insensitively drowns in the word <em>indices</em>; searching with word boundaries misses
+vendors whose dice support lives in a published PDF rather than in code. Require it to read the
+seed-creation path, the release notes, and the vendor's own documentation, and to say which of the
+four categories in &sect;3 applies.</p>
+<p>Tell it explicitly <strong>not</strong> to evaluate the result by testing whether the output
+looks random. Hashing anything produces output that passes randomness tests, so such tests cannot
+detect a weak seed.</p>
+
+<h3 id="what-ships-with-this-page"><a class="anchor" href="#what-ships-with-this-page">What ships with this page</a></h3>
+<p>The backing material sits in the repository beside this document, so none of it has to be taken
+on description alone. Only <code>verify_constructions.py</code> is standard library only; the rest
+need <code>pip install mnemonic embit==0.8.0</code> in a virtual environment.</p>
+<div class="tablewrap">
+<table>
+  <thead><tr><th>File</th><th>What it establishes</th></tr></thead>
+  <tbody>
+    <tr><td><a href="evidence/verify_constructions.py"><code>evidence/verify_constructions.py</code></a></td><td>Standard library only. Reproduces five official BIP-39 vectors as a self-test before asserting anything, then recomputes both vectors in <a href="#spec">&sect;9</a>, the competing 6-to-0 construction, and the paper-table mapping from the <a href="#addendum">addendum</a>. Run it from <code>evidence/</code>; it reads the wordlist from the working directory.</td></tr>
+    <tr><td><a href="evidence/wallet-dice-survey.md"><code>evidence/wallet-dice-survey.md</code></a></td><td>The source reading behind <a href="#implementations">&sect;3</a> and the addendum, with the pinned commit each classification came from, and the method any further wallet has to be surveyed by. Kern is classified from source but is not yet written up there.</td></tr>
+    <tr><td><a href="dice_bias_analysis.py"><code>dice_bias_analysis.py</code></a></td><td>The min-entropy figures in <a href="#quality">&sect;4</a>.</td></tr>
+    <tr><td><a href="dice_shannon_scoring.py"><code>dice_shannon_scoring.py</code></a></td><td>Why the Shannon-scoring guard discussed in <a href="#guards">&sect;6</a> does not catch a bad die.</td></tr>
+    <tr><td><a href="dice_tendice_box.py"><code>dice_tendice_box.py</code></a></td><td>The ten-dice-in-a-box recommendation evaluated in <a href="#quality">&sect;4</a>.</td></tr>
+  </tbody>
+</table>
+</div>
+
+<h2 id="spec"><a class="anchor" href="#spec"><span class="num">9</span>Reference: the construction</a></h2>
+<p>There is no BIP for this. What follows is not a proposal for one. It is a description of what the
+implementations in <a href="#implementations">&sect;3</a> already do, written down so it can be
+checked against them.</p>
+<pre><code>INPUT   rolls : string of ASCII digits '1'-'6'
+                len(rolls) == 50  -&gt;  12-word seed
+                len(rolls) == 99  -&gt;  24-word seed
+
+STEP 1  entropy = SHA256(rolls.encode('ascii'))          # 32 bytes
+STEP 2  if 12-word:  entropy = entropy[0:16]             # 128 bits
+STEP 3  mnemonic = bip39_encode(entropy)                 # BIP-39, English
+                                                         # indices are 0-based: 'abandon' == 0
+
+NOT     no 6 -&gt; 0 remap; the digit 6 is hashed as the character '6'
+        no base-6 or numeric conversion of the roll string
+        no bit-packing or bias-correction encoding
+        no separators, padding, or trailing newline in the input</code></pre>
+
+<h3 id="test-vectors"><a class="anchor" href="#test-vectors">Test vectors</a></h3>
+<div class="tablewrap">
+<table>
+  <thead><tr><th></th><th>Value</th></tr></thead>
+  <tbody>
+    <tr><td colspan="2"><span class="tag">50 rolls &rarr; 12 words</span></td></tr>
+    <tr><td>rolls</td><td><code style="word-break:break-all">65515223131652132161133154444123616466443112153441</code></td></tr>
+    <tr><td>SHA-256</td><td><code style="word-break:break-all">6cb09af855050dcde6fe2adc3181c250982011e2cf17821cbed56a908ec527c3</code></td></tr>
+    <tr><td>entropy (16 B)</td><td><code style="word-break:break-all">6cb09af855050dcde6fe2adc3181c250</code></td></tr>
+    <tr><td>mnemonic</td><td>hole luggage safe present express tragic orbit shed switch metal identify path</td></tr>
+    <tr><td colspan="2"><span class="tag">99 rolls &rarr; 24 words</span></td></tr>
+    <tr><td>rolls</td><td><code style="word-break:break-all">655152231316521321611331544441236164664431121534415633526456254462245546236542364246312613322234612</code></td></tr>
+    <tr><td>SHA-256 / entropy</td><td><code style="word-break:break-all">51531761ec7a738946e0b9f46bb11320a695495430e345c14f01ad8b3b898a6d</code></td></tr>
+    <tr><td>mnemonic</td><td>eyebrow obvious such suggest poet seven breeze blame virtual frown dynamic donor harsh pigeon express broccoli easy apology scatter force recipe shadow claim radio</td></tr>
+  </tbody>
+</table>
+</div>
+<p>A correct implementation reproduces both. If yours does not, the most likely cause is a
+6&rarr;0 remap or a numeric conversion applied before hashing.</p>
+
+<h2 id="analyses"><a class="anchor" href="#analyses"><span class="num">10</span>Known analyses</a></h2>
+<p>Published analyses of these implementations that we are aware of.</p>
+<ul>
+  <li><strong>Coldcard</strong>,
+    <a href="https://github.com/portlandhodl/coldcard_fw_dicerolls_trace/blob/9c04064ca1f84925017dcc5bd019a860f662f03d/dice-roll-5-6-0.pdf">Dice roll firmware trace</a>, 2026.
+    An independent dynamic trace of the <strong>24-word</strong> dice path on <strong>Mk4/Mk5
+    firmware v5.6.0</strong> (commit <code>3238f6fd</code>, which is the emergency release of
+    31 July 2026), run on the headless simulator, logging
+    every write into the hash accumulator and confirming no RNG is touched. Includes a
+    deterministic-build proof tying that commit to Coinkite's published signed firmware.
+    By <a href="https://github.com/portlandhodl">Portland.HODL</a>.
+    <br><span style="font-size:12.5px;color:var(--muted)">Scope: does not exercise the 12-word
+    path; Mk4/Mk5 only, not the Q line; one roll pattern; simulator rather than hardware.</span></li>
+  <li><strong>SeedSigner</strong>, <a href="index.html">Dice entropy: AI analysis and full
+    release history</a>, 2026. Reproduces the published vectors against independent
+    implementations, traces the shipped function dynamically, and tracks the construction across
+    every release since 2020.
+    <br><span style="font-size:12.5px;color:var(--muted)">Scope: dice path only; produced by the
+    that project's own lead developer using AI tooling.</span></li>
+</ul>
+<div class="note warn">
+  <span class="tag">Absence is not evidence</span>
+  <p><strong>This list reflects what we know of, not what exists.</strong> An implementation missing
+  from it has not been shown to be unreviewed, only that we are unaware of a published
+  analysis. If you know of one, or write one, it belongs here.</p>
+</div>
+<p>We reproduced the trace's figures independently before listing it.</p>
+
+
+<h2 id="addendum"><a class="anchor" href="#addendum"><span class="num">11</span>Addendum: other dice methods</a></h2>
+<p>Everything above concerns one construction. This addendum covers the rest of the landscape, for
+readers checking a specific wallet rather than the recipe itself.</p>
+<div class="note warn">
+  <span class="tag">Ask a sharper question than &ldquo;does it support dice?&rdquo;</span>
+  <p>Almost every wallet lets you type in a recovery phrase, so almost every wallet can
+  <em>receive</em> a dice-derived seed you worked out somewhere else. Answering yes on that basis
+  makes the question meaningless. The useful question is <strong>what the device itself does</strong>,
+  and there are three answers here beyond the recipe above.</p>
+  <p>This distinction is easy to get wrong, in two specific ways. Searching firmware for dice
+  arithmetic, finding none, and concluding &ldquo;no dice support&rdquo; misclassifies BitBox02,
+  Jade and Passport, all of which ship a feature built for hand-rolled seeds while two of the three
+  vendors publish dice instructions themselves.</p>
+  <p>The second trap is subtler. Reading the seed-<em>generation</em> path, finding a call to the
+  system random number generator, and stopping there misclassifies Sparrow, whose last-word
+  calculator sits on the seed-<em>entry</em> path and whose own documentation describes neither of
+  the two features that put it here. The affordance is not always where the entropy is, and it is
+  not always written down.</p>
+</div>
+
+<h3 id="dice-but-a-different-recipe"><a class="anchor" href="#dice-but-a-different-recipe">Dice, but a different recipe</a></h3>
+<p>These take your rolls and do the arithmetic themselves, but not this arithmetic. Each is
+internally consistent and none is broken. They simply produce a different wallet from the same
+rolls, so they cannot be used to check each other.</p>
+<p>The most common divergence is a single character. <strong>A competing convention rewrites every
+6 to a 0 before hashing</strong>, so the six faces read as 0 to 5 rather than 1 to 6. That one
+substitution is not a subtle difference in the result: run the 99-roll example from
+<a href="#how">&sect;2</a> through both conventions and the two 24-word phrases have <strong>no
+words in common at all</strong>. They agree only if you roll no 6 in the entire sequence, which at
+99 rolls happens about once in 69 million.</p>
+<div class="tablewrap">
+<table>
+  <thead><tr><th>Implementation</th><th>What it does instead</th><th>Source</th></tr></thead>
+  <tbody>
+    <tr><td><strong>Keystone</strong><br><span style="font-size:12px;color:var(--muted)">Hardware</span></td><td>Rewrites every <code>6</code> to <code>0</code>, then the same SHA-256 and truncation. Deliberately matches iancoleman's Dice mode.</td><td><a href="https://github.com/KeystoneHQ/keystone3-firmware/blob/3.0.2/src/ui/gui_widgets/gui_dice_rolls_widgets.c#L329-L339">keystone3-firmware @ 3.0.2</a> (the 24-word gate is <a href="https://github.com/KeystoneHQ/keystone3-firmware/blob/3.0.2/src/ui/gui_model/gui_model.c#L497">gui_model.c L497</a>)</td></tr>
+    <tr><td><strong>BlueWallet</strong><br><span style="font-size:12px;color:var(--muted)">Mobile app</span></td><td>No hashing at all. Packs rolls into bits, 0-indexed, and fills any shortfall from the phone's RNG.</td><td><a href="https://github.com/BlueWallet/BlueWallet/blob/8.0.1/screen/wallets/ProvideEntropy.tsx#L103-L125">BlueWallet @ 8.0.1</a></td></tr>
+    <tr><td><strong>iancoleman.io</strong><br><span style="font-size:12px;color:var(--muted)">Dice mode only</span></td><td>Rewrites <code>6</code> to <code>0</code>; default sub-mode does not hash at all.</td><td><a href="https://github.com/iancoleman/bip39/blob/de71c22328b24e0848bbe1bd12ac8974ca83b5b8/src/js/entropy.js#L183-L202">iancoleman/bip39 @ de71c22</a></td></tr>
+    <tr><td><strong>AirGap Vault</strong><br><span style="font-size:12px;color:var(--muted)">&ldquo;Coldcard&rdquo; mode</span></td><td class="weak">Rewrites <code>6</code> to <code>0</code>. Coldcard does not do this, so the setting does not do what its name says.</td><td><a href="https://github.com/airgap-it/airgap-vault/blob/aa50b7f0371ed2e681f358d22b546c7c000e05b7/src/app/services/dice-roll/dice-roll.service.ts#L18-L23">airgap-vault @ aa50b7f</a></td></tr>
+  </tbody>
+</table>
+</div>
+
+<div class="note warn">
+  <span class="tag">Two ways to get this wrong that look like getting it right</span>
+  <p><strong>A setting named after a wallet is not the same as that wallet.</strong> AirGap Vault's
+  dice screen offers a mode labeled &ldquo;Coldcard&rdquo;. It applies the 6-to-0 rewrite, which
+  Coldcard's firmware does not. Choosing it <em>because</em> you own a Coldcard gives you a seed
+  your Coldcard will never reproduce. Its other mode is the standard recipe.</p>
+  <p><strong>Matching roll counts prove nothing.</strong> The Elixir library
+  <a href="https://github.com/RooSoft/bitcoinlib/blob/a998a61caad66d074772ec4a10ba5268aa65ca40/lib/key/hd/entropy.ex#L41-L79">RooSoft/bitcoinlib</a>
+  demands exactly 50 or 99 rolls, the recipe's own signature numbers, then reads the digits as a
+  base-6 number and never hashes them. Everything visible from outside matches. The seed does
+  not.</p>
+</div>
+
+<h3 id="dice-with-a-paper-table"><a class="anchor" href="#dice-with-a-paper-table">Dice with a paper table</a></h3>
+<p>A third group does no dice arithmetic at all, and still deserves to be called dice support. The
+method is old and needs no firmware: roll dice, look each word up in a printed table, write it down.
+Anything that accepts a typed recovery phrase can then receive the result.</p>
+<p>What makes it practical is the last word. A BIP-39 phrase ends in a checksum, so most word
+combinations are invalid, and finding a legal final word by hand means testing candidates one at a
+time. <strong>These tools compute it for you</strong>, which is the whole reason the feature
+exists.</p>
+<p>A printed table is the usual way to reach the first 23 words, but it is not the only one, and
+the group is not only hardware. A desktop wallet can offer the same calculation against words you
+arrived at however you like, which is what puts Sparrow here rather than in the list below.</p>
+<div class="tablewrap">
+<table>
+  <thead><tr><th>Wallet</th><th>The final word</th><th>Position on dice</th></tr></thead>
+  <tbody>
+    <tr><td><strong>BitBox02</strong></td><td>Shows the 8 valid candidates; you choose</td><td>Publishes a dice guide and a 4-page lookup table</td></tr>
+    <tr><td><strong>Blockstream Jade</strong><br><span style="font-size:12px;color:var(--muted)">Two D16 and one D8, not six-sided</span></td><td>Shows the valid candidates; you choose</td><td>Publishes an article titled <a href="https://help.blockstream.com/blockstream-jade/add-more-security-functionality/create-a-recovery-phrase-using-dice">Create a recovery phrase using dice</a></td></tr>
+    <tr><td><strong>Foundation Passport</strong></td><td class="weak">Picks one itself, using the device's RNG</td><td>Documents the feature, but advises against dice</td></tr>
+    <tr><td><strong>Sparrow</strong><br><span style="font-size:12px;color:var(--muted)">Desktop software</span></td><td>Autosuggests every checksum-valid candidate as you type the last word, <a href="https://github.com/sparrowwallet/sparrow/blob/2.5.3/src/main/java/com/sparrowwallet/sparrow/control/MnemonicKeystorePane.java#L393-L406">since 1.7.4</a></td><td>Ships a Border Wallets grid for choosing the first 23 words. No dice screen. Its own docs describe neither feature, and mention dice only to tell you to mix rolls into a <a href="https://sparrowwallet.com/docs/coldcard-wallet.html">Coldcard</a></td></tr>
+  </tbody>
+</table>
+</div>
+<p>BitBox02's table is the clearest published example of the method. Five dice give 10 bits: you
+reroll any die showing 5 or 6 until it shows 1 to 4, which makes each die worth exactly 2 bits. A
+coin flip supplies the eleventh. Twenty-three words later you have 253 bits, and the device
+supplies the last word.</p>
+<p><strong>Jade's published method is not a six-sided one at all.</strong> It calls for two
+16-sided dice and one 8-sided die, thrown together once per word and read off a lookup table as
+<code>(D1&minus;1)&times;128 + (D2&minus;1)&times;8 + (D3&minus;1)</code>. That covers
+16&times;16&times;8 = 2048 exactly, so there is no rerolling and no coin flip, and each throw yields
+a whole word rather than a partial one. It arrives where BitBox02's method arrives, by different
+hardware and different arithmetic. The two are not variants of one scheme, and a transcript from
+one means nothing to the other.</p>
+<figure>
+<figcaption>Worth noticing: the final 3 bits of a 24-word seed come from a human choosing among 8
+candidates, not from the dice. Negligible against 253, but the dice do not supply everything.
+Passport's variant hands those bits to the device's RNG instead, so its last word is not yours at
+all.</figcaption>
+</figure>
+
+<div class="note">
+  <span class="tag">Not interoperable either</span>
+  <p>The paper-table method never hashes anything, so it does not reproduce the recipe above.
+  A BitBox02 dice transcript does not even contain the digits 5 or 6. The <em>phrase</em> you end up
+  with is ordinary BIP-39 and works in any wallet; it is the route from dice to phrase that
+  does not transfer.</p>
+</div>
+
+<h3 id="no-dice"><a class="anchor" href="#no-dice">No dice</a></h3>
+<p>These generate seeds from their own random number generator, and offer nothing for dice beyond
+the ordinary ability to type in a phrase you produced elsewhere:</p>
+<p><strong>Trezor &middot; Ledger &middot; KeepKey &middot; OneKey &middot; Bitkey &middot; Tangem
+&middot; Cypherock &middot; NGRAVE &middot; Ellipal &middot; SafePal &middot; D&rsquo;CENT &middot;
+Satochip &middot; Prokey &middot; SecuX &middot; Arculus &middot; Ballet &middot; Passport Prime
+&middot; Portal &middot; Frostsnap &middot; Electrum &middot; Nunchuk &middot;
+Liana &middot; Wasabi &middot; Blockstream Green &middot; Bitcoin Core</strong></p>
+<figure>
+<figcaption>Two footnotes. <strong>Specter DIY</strong> is not on either list because its documented
+feature is coin flips, not dice: it lets you set the 11 bits of any word by hand and repairs the
+checksum, leaving untouched words machine-generated. <strong>Bitcoin Core</strong> is a structural
+no rather than a policy one; it does not implement BIP-39 at all, so there is no seed for dice to
+feed.</figcaption>
+</figure>
+</div>
+<script>
+(function () {
+  var b = document.querySelector('.themetoggle');
+  if (!b) return;
+  b.addEventListener('click', function () {
+    var cur = document.documentElement.getAttribute('data-theme');
+    if (!cur) cur = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+    document.documentElement.setAttribute('data-theme', cur === 'dark' ? 'light' : 'dark');
+  });
+})();
+</script>
+</body>
+</html>

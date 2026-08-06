@@ -1,0 +1,23 @@
+timestamp: 19700101-000241
+board: Raspberry Pi Zero W Rev 1.1
+panel: 320x240
+requested_resolution: 640x640
+unit_id: a92ac791f26b   (sha256 of CPU serial, truncated)
+quiet_period_s: 10.0
+burst_n: 10
+preview_frames_chained: 46
+microsd_free_bytes: 138649600   need: 24576000 (20 frames x 1228800)
+
+--- phase: stock   ae_window_s=0.25   camera_revision=ov5647 ---
+ae_before_lock: exposure_speed=32978 shutter_speed=0 analog_gain=1.1875 digital_gain=3.625 iso=0 awb_gains=(1.35546875, 1.4453125) exposure_mode=auto
+frame 00: bytes=1228800 mode=RGB size=640x640 gap=0.000 capture_s=0.616
+frame 01: bytes=1228800 mode=RGB size=640x640 gap=0.616 capture_s=0.633
+frame 02: bytes=1228800 mode=RGB size=640x640 gap=0.633 capture_s=0.636
+frame 03: bytes=1228800 mode=RGB size=640x640 gap=0.636 capture_s=0.634
+frame 04: bytes=1228800 mode=RGB size=640x640 gap=0.634 capture_s=0.629
+frame 05: bytes=1228800 mode=RGB size=640x640 gap=0.629 capture_s=0.632
+frame 06: bytes=1228800 mode=RGB size=640x640 gap=0.632 capture_s=0.638
+frame 07: bytes=1228800 mode=RGB size=640x640 gap=0.638 capture_s=0.633
+frame 08: bytes=1228800 mode=RGB size=640x640 gap=0.633 capture_s=0.633
+frame 09: bytes=1228800 mode=RGB size=640x640 gap=0.633 capture_s=0.632
+ae_after_burst: exposure_speed=32909 shutter_speed=32909 analog_gain=3.5625 digital_gain=3.625 iso=0 awb_gains=(1.35546875, 1.4453125) exposure_mode=off

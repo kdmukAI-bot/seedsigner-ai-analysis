@@ -1,0 +1,11 @@
+__pycache__/
+*.pyc
+.DS_Store
+.claude/
+.claude-auto-commit
+
+# Uncropped originals of the occlusion-rig photos. They frame the inside of a
+# domestic refrigerator with legible product labels, and this repo is served
+# verbatim. Crop to the device and sealing material before anything is published;
+# the cropped versions belong in image-entropy/figures/, not here.
+image-entropy/capture-rig/photos-raw/

@@ -1,0 +1,407 @@
+--- _orig/src/seedsigner/views/tools_views.py	2026-06-09 21:10:44.000000000 -0500
++++ ss087b/src/seedsigner/views/tools_views.py	2026-08-05 23:44:29.624282058 -0500
+@@ -87,11 +87,314 @@
+ 
+             # Final image will be at least 4x the number of pixels the screen can
+             # actually display.
+-            camera.start_single_frame_mode(resolution=(2*max_dim, 2*max_dim))
++            # ===== BURST INSTRUMENTATION -- NOT FOR RELEASE =====
++            # Captures two bursts of consecutive frames instead of one frame, so sensor
++            # noise between frames can be measured. Stock capture parameters are left
++            # alone: same resolution, same capture_frame(). Only the number of captures,
++            # the auto-exposure window in phase 2, and the dumping are added.
++            #
++            # Two phases per run, on the same scene:
++            #   phase 1  "stock"    0.25s AE window -- exactly what v0.8.7 does
++            #   phase 2  "long-ae"  20s AE window   -- auto-exposure allowed to ramp
++            #
++            # capture_frame() freezes exposure on its FIRST call (exposure_mode='off'), so
++            # every frame in a burst shares one exposure state and the AE window above is
++            # what decides that state. Phase 2 must close and reopen the camera, because a
++            # fresh PiCamera is what re-enables AE after phase 1 locked it.
++            #
++            # NOTE this deliberately defeats the "image should never get saved" property:
++            # any seed produced by this build must be treated as compromised.
++            import os as _os
+ 
+-            time.sleep(0.25)
+-            self.controller.image_entropy_final_image = camera.capture_frame()
+-            camera.stop_single_frame_mode()
++            BURST_N = 10
++            QUIET_S = 10.0        # after the click, camera idle -- lets the press settle
++            AE_STOCK_S = 0.25     # stock v0.8.7 value, unchanged
++            AE_LONG_S = 20.0      # unused unless re-added to PHASES on the next line
++            PHASES = (("stock", AE_STOCK_S),)   # + ("long-ae", AE_LONG_S) to probe a long window
++            DUMP_ROOT = "/mnt/microsd"
++
++            stamp = time.strftime("%Y%m%d-%H%M%S")
++            # No RTC on these boards: every boot starts at 1970-01-01, so two units
++            # running at a similar time after power-on produce identical run names,
++            # and an import overwrote and destroyed a capture set exactly that way.
++            # Suffix the run name with the unit hash so names are unique per device.
++            # Computed here (rather than at the log line below) so the name can use it.
++            try:
++                _ser = _os.popen("cat /proc/cpuinfo | grep Serial").read().split(":")[-1].strip()
++                _unit = hashlib.sha256(_ser.encode()).hexdigest()[:12]
++            except Exception:
++                _unit = ""
++            out_dir = "%s/burst-%s-%s" % (DUMP_ROOT, stamp, _unit[:4] or "xxxx")
++            log_lines = []
++
++            def _log(msg):
++                # Held in memory, flushed to the card at the end. The microSD is the only
++                # durable sink here; a console log is not retained.
++                log_lines.append(msg)
++
++            for _d in [out_dir, "%s/preview" % out_dir] + ["%s/%s" % (out_dir, _p) for _p, _ in PHASES]:
++                try:
++                    _os.mkdir(_d)
++                except Exception:
++                    pass
++
++            try:
++                model = open("/proc/device-tree/model").read().strip("\x00").strip()
++            except Exception:
++                model = "unknown"
++
++            _log("timestamp: %s" % stamp)
++            _log("board: %s" % model)
++            _log("panel: %dx%d" % (self.canvas_width, self.canvas_height))
++            _log("requested_resolution: %dx%d" % (2*max_dim, 2*max_dim))
++            # Identify the physical unit so datasets from different boards are never
++            # conflated. The CPU serial is hashed, not logged: it distinguishes units
++            # without publishing a hardware identifier.
++            if _unit:
++                _log("unit_id: %s   (sha256 of CPU serial, truncated)" % _unit)
++            else:
++                _log("unit_id: unavailable")
++            _log("quiet_period_s: %.1f" % QUIET_S)
++            _log("burst_n: %d" % BURST_N)
++            _log("preview_frames_chained: %d"
++                 % len(self.controller.image_entropy_preview_frames or []))
++
++            # ----- PREVIEW-FRAME LAYER (see capture-rig/PREVIEW-FRAME-PLAN.md) -----
++            # The rolling preview window, exactly as it stands at the click, is what the
++            # entropy hash chains ahead of the final image. Sampling rule: N <= 20 dump
++            # every frame, otherwise the first 10 and the last 10 -- never every Nth,
++            # because uniform subsampling inflates the frame-to-frame differences, which
++            # is the anti-conservative direction.
++            previews = self.controller.image_entropy_preview_frames or []
++            n_prev = len(previews)
++            if n_prev <= 20:
++                dump_idxs = list(range(n_prev))
++            else:
++                dump_idxs = list(range(10)) + list(range(n_prev - 10, n_prev))
++            # Positional sampling alone loses the content of exactly the frames
++            # worth having. In the first preview runs the only live frame of a
++            # 50-slot window sat at index 37, inside the gap, so its content was
++            # unrecoverable while its distinctness was known from the digest. The
++            # digests are computed here anyway, so also dump a representative of
++            # any digest the positional sample missed. Capped: in a lit scene
++            # every frame is distinct and an uncapped rule would dump the whole
++            # window.
++            PREVIEW_EXTRA_MAX = 10
++
++            # Pre-flight space check. A full run writes BURST_N frames per phase plus
++            # the sampled preview frames; running out mid-burst leaves a partial series
++            # and, worse, loses the log. Check first and say so plainly rather than
++            # failing on frame 7. Preview frames are RGBA at the panel dimension, not
++            # the still size.
++            frame_bytes = (2 * max_dim) * (2 * max_dim) * 3
++            preview_bytes = max_dim * max_dim * 4
++            need = (frame_bytes * BURST_N * len(PHASES)
++                    + preview_bytes * (len(dump_idxs) + PREVIEW_EXTRA_MAX))
++            try:
++                st = _os.statvfs(DUMP_ROOT)
++                free = st.f_bavail * st.f_frsize
++                _log("microsd_free_bytes: %d   need: %d (%d burst x %d + %d preview x %d)"
++                     % (free, need, BURST_N * len(PHASES), frame_bytes,
++                        len(dump_idxs), preview_bytes))
++                if free < need:
++                    _log("ABORTED: insufficient free space on %s" % DUMP_ROOT)
++                    try:
++                        with open("%s/capture.log" % out_dir, "w") as fh:
++                            fh.write("\n".join(log_lines) + "\n")
++                    except Exception:
++                        pass
++                    raise Exception(
++                        "microSD has %d bytes free; this run needs %d" % (free, need))
++            except OSError as e:
++                _log("microsd_free_bytes: unavailable (%r)" % e)
++
++            # Quiet period with the camera IDLE, so the mechanical disturbance from the
++            # button press damps out before any capture.
++            time.sleep(QUIET_S)
++
++            # Record the auto-exposure state as it stands at the end of the AE window, i.e.
++            # what capture_frame() is about to freeze. This makes the AE question measured
++            # rather than inferred: whether a longer window actually changed anything, and
++            # whether a reframed scene made AE work differently, are both answered by these
++            # numbers rather than deduced from the noise statistics.
++            def _ae_state(cam, when):
++                try:
++                    p = cam._picamera
++                    _log("ae_%s: exposure_speed=%s shutter_speed=%s analog_gain=%s "
++                         "digital_gain=%s iso=%s awb_gains=%s exposure_mode=%s"
++                         % (when, p.exposure_speed, p.shutter_speed,
++                            float(p.analog_gain), float(p.digital_gain), p.iso,
++                            tuple(float(g) for g in p.awb_gains), p.exposure_mode))
++                except Exception as e:
++                    _log("ae_%s: unavailable (%r)" % (when, e))
++
++            last_img = None
++            try:
++                # Hash EVERY frame in the preview window, dump only the sample. The
++                # distinct-digest count answers a question the dumped sample cannot:
++                # whether the N slots hold N distinct sensor reads, over the entire
++                # window, at zero storage cost. This runs ONCE, after the preview loop
++                # has returned and before the burst -- never inside a capture loop,
++                # which stretched the inter-frame gap from ~0.6s to 3.2s (README trap
++                # #1). It sits inside this try so the finally below flushes the log if
++                # a write fails partway. Frames are dumped as the exact bytes the
++                # entropy hash consumes -- PIL .tobytes(), no conversion -- with the
++                # original window index in the filename so the early and late blocks
++                # stay identifiable.
++                # Pass 1: hash the whole window and log every digest.
++                _digests = []
++                for _i, _img in enumerate(previews):
++                    _raw = _img.tobytes()
++                    _dig = hashlib.sha256(_raw).hexdigest()
++                    _digests.append(_dig)
++                    _log("preview %02d: digest=%s bytes=%d mode=%s size=%dx%d"
++                         % (_i, _dig, len(_raw), _img.mode, _img.width, _img.height))
++                _log("preview_distinct_frames: %d of %d"
++                     % (len(set(_digests)), n_prev))
++
++                # Preview-loop timing, collected in the screen (see BURST_PREVIEW_TIMING
++                # in tools_screens.py). Two rates, and they are not the same thing:
++                #   loop rate     -- how fast slots are filled (every append)
++                #   delivery rate -- how fast NEW content arrives (appends whose digest
++                #                    differs from the previous one)
++                # If the loop outpaces delivery, a full 50-slot window cannot hold 50
++                # distinct sensor reads under any lighting, which is a fact about the
++                # code path rather than about the scene.
++                #
++                # Read the delivery figure as a LOWER BOUND: it counts content changes
++                # between consecutive appends, so when the loop runs slower than the
++                # camera every poll returns something new and the figure saturates at the
++                # loop rate rather than reporting true sensor delivery. It is exact only
++                # in the case that matters here -- loop faster than camera. Equal rates
++                # alias and read low. In a dark scene it also undercounts badly, because
++                # separate reads that both quantize to black are one digest; the number
++                # is only meaningful on a lit capture.
++                try:
++                    from seedsigner.gui.screens import tools_screens as _ts
++                    _t = _ts.BURST_PREVIEW_TIMING
++                    _ap = _t.get("appends") or []
++                    _log("")
++                    _log("preview_none_reads: %d   (camera warm-up polls, no frame)"
++                         % _t.get("none_reads", -1))
++                    if _ap:
++                        _log("preview_warmup_s: %.3f   (stream start -> first append)"
++                             % (_ap[0] - _t["stream_start"]))
++                        _log("preview_appends_total: %d   (whole session; window keeps "
++                             "the last %d)" % (len(_ap), n_prev))
++                        _span = _ap[-1] - _ap[0]
++                        if _span > 0 and len(_ap) > 1:
++                            _log("preview_loop_rate_fps: %.2f   over %.3f s"
++                                 % ((len(_ap) - 1) / _span, _span))
++                        # Delivery rate over the retained window: count digest changes
++                        # and divide by the time those frames spanned.
++                        _w = _ap[-n_prev:] if n_prev <= len(_ap) else _ap
++                        _new = sum(1 for _k in range(1, len(_digests))
++                                   if _digests[_k] != _digests[_k - 1])
++                        _wspan = (_w[-1] - _w[0]) if len(_w) > 1 else 0.0
++                        if _wspan > 0:
++                            _log("preview_window_span_s: %.3f   content_changes: %d   "
++                                 "delivery_rate_fps: %.2f" % (_wspan, _new, _new / _wspan))
++                        _gaps = [_ap[_k] - _ap[_k - 1] for _k in range(1, len(_ap))]
++                        if _gaps:
++                            _log("preview_gap_s: min=%.4f median=%.4f max=%.4f"
++                                 % (min(_gaps), sorted(_gaps)[len(_gaps) // 2], max(_gaps)))
++                        if "click" in _t:
++                            _log("preview_click_to_last_append_s: %.4f"
++                                 % (_t["click"] - _ap[-1]))
++                            _log("preview_total_s: %.3f   (stream start -> click)"
++                                 % (_t["click"] - _t["stream_start"]))
++                        # Per-retained-frame offsets, seconds before the click, so a
++                        # dumped frame's index can be placed in time.
++                        _ref = _t.get("click", _ap[-1])
++                        _log("preview_frame_offsets_s (index:seconds_before_click): %s"
++                             % " ".join("%d:%.3f" % (_k, _ref - _w[_k])
++                                        for _k in range(len(_w))))
++                    else:
++                        _log("preview_timing: unavailable (no appends recorded)")
++                except Exception as _e:
++                    _log("preview_timing: unavailable (%r)" % _e)
++
++                # Pass 2: positional sample, plus a first-occurrence
++                # representative of any digest the sample missed, capped.
++                _dump_set = set(dump_idxs)
++                _covered = set(_digests[_i] for _i in _dump_set)
++                _extra = []
++                for _i, _dig in enumerate(_digests):
++                    if len(_extra) >= PREVIEW_EXTRA_MAX:
++                        break
++                    if _dig not in _covered:
++                        _covered.add(_dig)
++                        _extra.append(_i)
++                _missed = len(set(_digests)) - len(_covered)
++                _dump_set |= set(_extra)
++                for _i in sorted(_dump_set):
++                    with open("%s/preview/frame%02d.raw" % (out_dir, _i), "wb") as fh:
++                        fh.write(previews[_i].tobytes())
++                _log("preview_frames_dumped: %d   indices: %s"
++                     % (len(_dump_set), ",".join(str(_i) for _i in sorted(_dump_set))))
++                _log("preview_extra_dumped: %d   indices: %s   (unsampled digests "
++                     "still uncovered: %d)"
++                     % (len(_extra), ",".join(str(_i) for _i in _extra), _missed))
++
++                for phase, ae_wait in PHASES:  # add ("long-ae", AE_LONG_S) to probe a long window
++                    camera.start_single_frame_mode(resolution=(2*max_dim, 2*max_dim))
++                    try:
++                        rev = camera._picamera.revision
++                    except Exception:
++                        rev = "unavailable"
++                    _log("")
++                    _log("--- phase: %s   ae_window_s=%.2f   camera_revision=%s ---"
++                         % (phase, ae_wait, rev))
++
++                    time.sleep(ae_wait)
++                    _ae_state(camera, "before_lock")
++
++                    # The capture loop does nothing but capture and note the time. Hashing,
++                    # means and file writes all happen afterwards: they are validity checks
++                    # on the data, not things that have to happen live, and doing them here
++                    # stretched the inter-frame gap to 3.2s when the capture itself is only
++                    # ~0.6s. Ten frames held in RAM is ~6.9MB.
++                    imgs = []
++                    times = []
++                    for i in range(BURST_N):
++                        t0 = time.time()
++                        imgs.append(camera.capture_frame())
++                        times.append((t0, time.time()))
++
++                    # Write the frames, and log only what the frames cannot carry: the
++                    # timing. Hashes, means, duplicate detection and every statistic are
++                    # derivable from the .raw files and are computed off-device, so none of
++                    # them belong here.
++                    for i, img in enumerate(imgs):
++                        raw = img.tobytes()
++                        t0, t1 = times[i]
++                        gap = (t0 - times[i - 1][0]) if i else 0.0
++                        with open("%s/%s/frame%02d.raw" % (out_dir, phase, i), "wb") as fh:
++                            fh.write(raw)
++                        _log("frame %02d: bytes=%d mode=%s size=%dx%d gap=%.3f capture_s=%.3f"
++                             % (i, len(raw), img.mode, img.width, img.height,
++                                gap, t1 - t0))
++                    last_img = imgs[-1]
++                    imgs = None
++
++                    # After the burst: capture_frame() locked exposure on its first call,
++                    # so these should match the pre-lock values with exposure_mode='off'.
++                    # A mismatch would mean the lock is not holding across the burst, which
++                    # would invalidate treating the series as one exposure state.
++                    _ae_state(camera, "after_burst")
++
++                    camera.stop_single_frame_mode()
++            finally:
++                # Always flush the log, even if a capture or a write failed partway. The
++                # log is the thing most likely to be lost and the hardest to reconstruct.
++                try:
++                    with open("%s/capture.log" % out_dir, "w") as fh:
++                        fh.write("\n".join(log_lines) + "\n")
++                except Exception as e:
++                    logger.error("burst log write FAILED: %r", e, exc_info=True)
++
++            self.controller.image_entropy_final_image = last_img
++            # ===== END BURST INSTRUMENTATION =====
+ 
+         # Prep a copy of the image for display:
+         #   * Boost the contrast for better presentation (but preserve the original pixels)
+--- _orig/src/seedsigner/gui/screens/tools_screens.py	2026-06-09 21:10:44.000000000 -0500
++++ ss087b/src/seedsigner/gui/screens/tools_screens.py	2026-08-05 23:43:39.095377779 -0500
+@@ -14,6 +14,25 @@
+ 
+ 
+ 
++# ===== BURST INSTRUMENTATION -- NOT FOR RELEASE =====
++# Timing for the live-preview loop, read by tools_views.py after the screen returns.
++# A module global rather than a changed return signature, so the screen's contract with
++# the View is untouched and the instrumentation stays removable in one hunk.
++#
++# What this answers: the preview list fills at the DISPLAY LOOP's rate, while new content
++# arrives at the camera's configured 24 fps, and read_video_stream() returns whatever the
++# capture thread last stored with no synchronisation. So if the loop outpaces delivery the
++# excess polls necessarily re-return one buffer. Timestamps here, combined with the
++# per-frame digests logged in tools_views.py, separate the two rates directly: every
++# append gives the loop rate, appends whose content differs from the previous give the
++# delivery rate.
++#
++# Cost: time.time() plus a list append, microseconds against a ~30 ms iteration dominated
++# by a 115,200-byte SPI write. This is NOT the in-loop hashing that stretched the burst
++# inter-frame gap from 0.59 s to 3.2 s -- that was megabytes of SHA-256 per iteration.
++BURST_PREVIEW_TIMING = {}
++
++
+ @dataclass
+ class ToolsImageEntropyLivePreviewScreen(BaseScreen):
+     def __post_init__(self):
+@@ -26,12 +45,19 @@
+         # TODO: Figure out why (camera expecting frame dims of multiples other than 16?)
+         max_dimension = max(self.canvas_width, self.canvas_height)
+         self.camera.start_video_stream_mode(resolution=(max_dimension, max_dimension), framerate=24, format="rgb")
++        # Stamped here, not in _run(), so camera warm-up is measured from the moment the
++        # stream was asked to start rather than from the first loop iteration.
++        BURST_PREVIEW_TIMING.clear()
++        BURST_PREVIEW_TIMING["stream_start"] = time.time()
+ 
+ 
+     def _run(self):
+         # save preview image frames to use as additional entropy below
+         preview_images = []
+         max_entropy_frames = 50
++        BURST_PREVIEW_TIMING["run_start"] = time.time()
++        BURST_PREVIEW_TIMING["appends"] = []
++        BURST_PREVIEW_TIMING["none_reads"] = 0
+         instructions_font = Fonts.get_font(GUIConstants.get_body_font_name(), GUIConstants.get_button_font_size())
+ 
+         while True:
+@@ -46,6 +72,7 @@
+ 
+             if frame is None:
+                 # Camera probably isn't ready yet
++                BURST_PREVIEW_TIMING["none_reads"] += 1
+                 time.sleep(0.01)
+                 continue
+ 
+@@ -78,6 +105,7 @@
+             if self.hw_inputs.check_for_low(keys=HardwareButtonsConstants.KEYS__ANYCLICK):
+                 # Have to manually update last input time since we're not in a wait_for loop
+                 self.hw_inputs.update_last_input_time()
++                BURST_PREVIEW_TIMING["click"] = time.time()
+                 self.camera.stop_video_stream_mode()
+ 
+                 with self.renderer.lock:
+@@ -118,6 +146,10 @@
+                 # before we add the currest frame.
+                 preview_images.pop(0)
+             preview_images.append(frame)
++            # Every append, not just the retained window: the full series measures the
++            # loop rate over the whole session, and the last len(preview_images) entries
++            # align positionally with the window that is actually returned.
++            BURST_PREVIEW_TIMING["appends"].append(time.time())
+ 
+ 
+ 
+--- _orig/src/seedsigner/controller.py	2026-06-09 21:10:44.000000000 -0500
++++ ss087b/src/seedsigner/controller.py	2026-08-05 22:29:41.217080990 -0500
+@@ -100,7 +100,7 @@
+         rather than at the top in order avoid circular imports.
+     """
+ 
+-    VERSION = "0.8.7"
++    VERSION = "0.8.7-BURST-DEBUG"
+ 
+     # Declare class member vars with type hints to enable richer IDE support throughout
+     # the code.

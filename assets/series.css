@@ -1,0 +1,294 @@
+/* Minimal reset -- the artifact host supplied one; a standalone page must not assume it. */
+*,*::before,*::after{ box-sizing:border-box; }
+html{ -webkit-text-size-adjust:100%; font-size:106%; }   /* ~17px phones */
+@media (min-width:640px){  html{ font-size:113%; } }     /* ~18px tablets */
+@media (min-width:1024px){ html{ font-size:119%; } }     /* ~19px laptops+ */
+/* Percentages, not px, so browser font-size preferences still apply. */
+body,h1,h2,h3,h4,p,ul,ol,figure,blockquote,dl,dd,pre{ margin:0; padding:0; }
+ul,ol{ padding-left:1.3rem; }
+img{ max-width:100%; display:block; }
+table{ border-collapse:collapse; }
+
+:root{
+    --ground:#F7F5F3; --surface:#FFFFFF; --raised:#F1EDEA;
+    --ink:#1B1719; --muted:#6E6467; --faint:#948A8D;
+    --rule:#E2DCD9; --rule-strong:#CFC6C2;
+    --accent:#A81D2D; --accent-soft:#F3E2E3; --accent-ink:#8A1725;
+    --pass:#2D6A4F; --pass-soft:#E3EFE8;
+    --warn:#8A5A12; --warn-soft:#F6EEE0;
+    --plate:#0C0B0B;
+    --sans:"SS Sans",ui-sans-serif,system-ui,sans-serif;
+    --mono:"SS Mono",ui-monospace,monospace;
+    --measure:72ch;
+  }
+  @media (prefers-color-scheme:dark){
+    :root{
+      --ground:#161315; --surface:#1E1A1C; --raised:#241F21;
+      --ink:#EDE8E6; --muted:#9E9295; --faint:#7A6F72;
+      --rule:#302A2D; --rule-strong:#413A3D;
+      --accent:#E85D68; --accent-soft:#3A2124; --accent-ink:#F2848C;
+      --pass:#56A67F; --pass-soft:#1D2E26;
+      --warn:#D9A441; --warn-soft:#2A2011;
+      --plate:#000000;
+    }
+  }
+  :root[data-theme="dark"]{
+    --ground:#161315; --surface:#1E1A1C; --raised:#241F21;
+    --ink:#EDE8E6; --muted:#9E9295; --faint:#7A6F72;
+    --rule:#302A2D; --rule-strong:#413A3D;
+    --accent:#E85D68; --accent-soft:#3A2124; --accent-ink:#F2848C;
+    --pass:#56A67F; --pass-soft:#1D2E26;
+    --warn:#D9A441; --warn-soft:#2A2011;
+    --plate:#000000;
+  }
+  :root[data-theme="light"]{
+    --ground:#F7F5F3; --surface:#FFFFFF; --raised:#F1EDEA;
+    --ink:#1B1719; --muted:#6E6467; --faint:#948A8D;
+    --rule:#E2DCD9; --rule-strong:#CFC6C2;
+    --accent:#A81D2D; --accent-soft:#F3E2E3; --accent-ink:#8A1725;
+    --pass:#2D6A4F; --pass-soft:#E3EFE8;
+    --warn:#8A5A12; --warn-soft:#F6EEE0;
+    --plate:#0C0B0B;
+  }
+
+  body{
+    background:var(--ground); color:var(--ink);
+    font-family:var(--sans); font-size:1rem; line-height:1.6;
+    -webkit-font-smoothing:antialiased;
+  }
+  .wrap{ max-width:var(--measure); margin:0 auto; padding:0 1.1rem 6rem; }
+  .wide{
+    width:min(104ch, calc(100vw - 2.2rem));
+    position:relative; left:50%; transform:translateX(-50%);
+  }
+
+  p,ul,ol{ margin:0 0 1.05rem; }
+  li{ margin-bottom:.35rem; }
+  a{ color:var(--accent-ink); text-underline-offset:2px; text-decoration-thickness:1px; }
+  a:focus-visible{ outline:2px solid var(--accent); outline-offset:3px; border-radius:2px; }
+
+  .eyebrow{
+    font-family:var(--mono); font-size:.68rem; letter-spacing:.16em;
+    text-transform:uppercase; color:var(--accent); margin:0 0 1rem;
+  }
+  h1{
+    font-size:clamp(1.9rem,4.6vw,2.9rem); line-height:1.1; font-weight:650;
+    letter-spacing:-.02em; text-wrap:balance; margin:0 0 1rem;
+  }
+  h2{
+    scroll-margin-top:1.4rem; font-size:1.32rem; line-height:1.25; font-weight:650;
+    letter-spacing:-.01em; text-wrap:balance; margin:3rem 0 .9rem;
+    padding-top:1rem; border-top:1px solid var(--rule);
+  }
+  h3{ scroll-margin-top:1.4rem; font-size:1.02rem; font-weight:650; text-wrap:balance; margin:1.9rem 0 .6rem; }
+
+  /* Section titles are their own links, so any heading can be linked to directly. The title
+     carries no link styling until hovered: an always-underlined heading reads as decoration
+     and competes with the real links in the prose. */
+  .anchor{ color:inherit; text-decoration:none; }
+  .anchor:hover{ color:var(--accent-ink); }
+  .anchor:focus-visible{ outline:2px solid var(--accent); outline-offset:3px; border-radius:2px; }
+  h2 .anchor .num{ color:var(--accent); }   /* section number keeps the accent through the link */
+  h2 .num{
+    font-family:var(--mono); font-size:.66em; font-weight:400;
+    color:var(--accent); margin-right:.6em; letter-spacing:.03em;
+  }
+  .standfirst{ font-size:1.06rem; line-height:1.55; color:var(--muted); margin:0 0 1.8rem; }
+
+  header.masthead{ padding:4rem 0 0; }
+
+  .meta{
+    display:grid; grid-template-columns:repeat(auto-fit,minmax(132px,1fr));
+    gap:1px; background:var(--rule); border:1px solid var(--rule);
+    font-family:var(--mono); margin:1.8rem 0 0;
+  }
+  .meta div{ background:var(--ground); padding:.65rem .8rem; }
+  .meta dt{ font-size:.6rem; letter-spacing:.11em; text-transform:uppercase; color:var(--faint); }
+  .meta dd{ font-size:.79rem; margin:.22rem 0 0; font-variant-numeric:tabular-nums; }
+
+  .short{
+    background:var(--raised); border:1px solid var(--rule); padding:1.5rem 1.4rem;
+    margin:2.2rem 0;
+  }
+  .short .tag{
+    font-family:var(--mono); font-size:.63rem; letter-spacing:.15em;
+    text-transform:uppercase; color:var(--accent); display:block; margin-bottom:1rem;
+  }
+  /* Findings-first summary: a verdict, then the statements that support it.
+     .sgrid remains available where a subject is genuinely best summarised numerically. */
+  .short .verdict{
+    font-size:1.16rem; line-height:1.38; font-weight:650; letter-spacing:-.01em;
+    text-wrap:balance; margin:0 0 1.05rem;
+  }
+  .short ul{ list-style:none; margin:0; padding:0; }
+  .short li{
+    position:relative; padding-left:1.35rem; margin-bottom:.6rem;
+    font-size:.97rem; line-height:1.52;
+  }
+  .short li::before{
+    content:"\2014"; position:absolute; left:0; color:var(--pass);
+    font-family:var(--mono);
+  }
+  .short li:last-child{ margin-bottom:0; }
+  .short li b{ font-weight:650; font-variant-numeric:tabular-nums; }
+
+  .sgrid{ display:grid; grid-template-columns:repeat(auto-fit,minmax(118px,1fr)); gap:1.2rem; }
+  .sgrid .n{
+    font-family:var(--mono); font-size:1.5rem; font-weight:600; color:var(--pass);
+    font-variant-numeric:tabular-nums; line-height:1; letter-spacing:-.02em;
+  }
+  .sgrid .k{
+    font-family:var(--mono); font-size:.61rem; letter-spacing:.09em;
+    text-transform:uppercase; color:var(--muted); margin-top:.42rem; line-height:1.4;
+  }
+
+  nav.toc{
+    border:1px solid var(--rule); background:var(--surface);
+    padding:1.1rem 1.3rem; margin:2rem 0;
+    font-family:var(--mono); font-size:1.02rem; line-height:1.9;
+  }
+  nav.toc .tag{
+    font-size:.72rem; letter-spacing:.14em; text-transform:uppercase;
+    color:var(--faint); display:block; margin-bottom:.5rem;
+  }
+  nav.toc ol{ margin:0; padding-left:1.4rem; }
+  /* Marks the same division in the contents that .partbreak marks in the body. Accent and a
+     rule rather than the faint treatment of the "Contents" label, so the split is visible
+     before a reader has scrolled anywhere. */
+  nav.toc .tocpart{
+    font-family:var(--mono); font-size:.72rem; letter-spacing:.15em;
+    text-transform:uppercase; color:var(--accent);
+    margin:1.15rem 0 .55rem; padding-top:.95rem;
+    border-top:1px solid var(--rule-strong);
+  }
+  /* The first part label sits directly under "Contents" and needs no rule above it. */
+  nav.toc .tocpart:first-of-type{ border-top:0; padding-top:0; margin-top:.15rem; }
+  nav.toc a{ color:var(--ink); text-decoration:none; }
+  nav.toc a:hover{ color:var(--accent-ink); text-decoration:underline; }
+
+  .pull{
+    margin:2.4rem auto; max-width:min(80ch,93vw); padding:1.2rem 0;
+    border-top:1px solid var(--rule-strong); border-bottom:1px solid var(--rule-strong);
+    font-size:clamp(1.05rem,2.3vw,1.28rem); line-height:1.38; font-weight:600;
+    letter-spacing:-.01em; text-wrap:balance;
+  }
+  .pull em{ color:var(--accent-ink); font-style:normal; }
+
+  figure{ margin:2.2rem 0; }
+  .plates{ display:grid; grid-template-columns:1fr 1fr; gap:.9rem; }
+  @media (max-width:620px){ .plates{ grid-template-columns:1fr; } }
+  .plate{ background:var(--plate); border:1px solid var(--rule); padding:.45rem; }
+  .plate img{ width:100%; display:block; image-rendering:pixelated; }
+  .plate .lbl{
+    font-family:var(--mono); font-size:.6rem; letter-spacing:.09em;
+    text-transform:uppercase; color:#8A8083; padding:.4rem .2rem .1rem;
+  }
+  figcaption{
+    font-family:var(--mono); font-size:.73rem; line-height:1.6;
+    color:var(--muted); margin-top:.8rem; padding-left:.8rem;
+    border-left:2px solid var(--rule-strong);
+  }
+
+  /* Divides a document into the analysis a reader needs and the working behind it.
+     Everything after a .partbreak is written to be checked rather than read. */
+  .partbreak{
+    margin:5rem 0 3rem; padding:2.1rem 0 0;
+    border-top:3px double var(--rule-strong);
+  }
+  .partbreak .eyebrow{ margin:0 0 .55rem; }
+  /* A part title outranks every section heading below it, so it is set near h1 scale.
+     At h2 scale or smaller it reads as just another section and the division is lost. */
+  .partbreak .parttitle{
+    font-size:clamp(1.75rem,4vw,2.4rem); line-height:1.08; font-weight:650;
+    letter-spacing:-.022em; text-wrap:balance;
+    margin:0 0 1.1rem; padding:0; border:0;
+  }
+  /* Direct children only. The reviewer brief is a .note inside this block and must not inherit
+     the muted treatment: it is the first thing the intended reader needs to read. */
+  .partbreak > p{
+    font-size:.95rem; line-height:1.65; color:var(--muted); max-width:var(--measure);
+  }
+  .partbreak > p:last-child{ margin-bottom:0; }
+  .partbreak .note{ margin-top:1.6rem; }
+  .partbreak .note p:last-child, .partbreak .note ul:last-child{ margin-bottom:0; }
+  /* Part two is reference material, so it is set denser than part one: same content model,
+     less air. This is a cue for human readers only; a machine reading the document gets its
+     structure from the markup, not the type size. */
+  .partbreak ~ h2{ margin-top:2.6rem; }
+  .partbreak ~ h3{ margin-top:1.6rem; }
+  .partbreak ~ p, .partbreak ~ ol, .partbreak ~ ul{ font-size:.95rem; line-height:1.58; }
+  .partbreak ~ ol, .partbreak ~ ul{ padding-left:1.25rem; }
+  .partbreak ~ ol li, .partbreak ~ ul li{ margin-bottom:.45rem; }
+  .partbreak ~ .tablewrap table{ font-size:.79rem; }
+
+  .note{ border-left:3px solid var(--rule-strong); background:var(--surface);
+    padding:1rem 1.2rem; margin:1.5rem 0; }
+  .note.warn{ border-left-color:var(--warn); background:var(--warn-soft); }
+  .note.pass{ border-left-color:var(--pass); background:var(--pass-soft); }
+  .note .tag{
+    font-family:var(--mono); font-size:.61rem; letter-spacing:.13em;
+    text-transform:uppercase; display:block; margin-bottom:.45rem; color:var(--muted);
+  }
+  .note.warn .tag{ color:var(--warn); }
+  .note.pass .tag{ color:var(--pass); }
+  .note p:last-child{ margin-bottom:0; }
+
+  .tablewrap{ overflow-x:auto; margin:1.4rem 0; }
+  table{ border-collapse:collapse; width:100%; font-size:.83rem; }
+  th,td{ text-align:left; padding:.55rem .75rem; border-bottom:1px solid var(--rule); vertical-align:top; }
+  th{
+    font-family:var(--mono); font-size:.62rem; letter-spacing:.08em;
+    text-transform:uppercase; color:var(--muted); font-weight:400;
+    border-bottom:1px solid var(--rule-strong);
+  }
+  td.num{ font-family:var(--mono); font-variant-numeric:tabular-nums; white-space:nowrap; }
+  tr:last-child td{ border-bottom:0; }
+  .hi td{ background:var(--pass-soft); font-weight:650; }
+
+  code{ font-family:var(--mono); font-size:.86em; background:var(--raised);
+    padding:.08em .32em; border-radius:2px; }
+  pre{ font-family:var(--mono); font-size:.73rem; line-height:1.5;
+    background:var(--surface); border:1px solid var(--rule);
+    padding:.9rem 1rem; overflow-x:auto; margin:1.2rem 0; }
+  pre code{ background:none; padding:0; font-size:inherit; }
+  blockquote{ margin:1.1rem 0; padding:.15rem 0 .15rem 1.1rem;
+    border-left:2px solid var(--rule-strong); color:var(--muted);
+    font-size:.9rem; line-height:1.55; }
+  blockquote p:last-child{ margin-bottom:0; }
+
+  .weak{ font-size:.88rem; color:var(--muted); margin-top:-.4rem; }
+  .weak strong{ color:var(--warn); }
+
+  footer{ margin-top:3rem; padding-top:1.4rem; border-top:1px solid var(--rule);
+    font-family:var(--mono); font-size:.73rem; color:var(--muted); line-height:1.6; }
+  @media (prefers-reduced-motion:reduce){ *{ animation:none!important; transition:none!important; } }
+
+/* --- Theme toggle (standalone pages have no host-supplied control) --- */
+.themetoggle{
+  position:fixed; top:.9rem; right:.9rem; z-index:10;
+  width:2rem; height:2rem; border-radius:50%;
+  border:1px solid var(--rule-strong); background:var(--surface); color:var(--muted);
+  font-size:.9rem; line-height:1; cursor:pointer; padding:0;
+}
+.themetoggle:hover{ color:var(--ink); border-color:var(--ink); }
+.themetoggle:focus-visible{ outline:2px solid var(--accent); outline-offset:2px; }
+@media print{ .themetoggle{ display:none; } }
+
+/* --- Series landing page --- */
+.entries{ list-style:none; padding:0; margin:2rem 0 0; }
+.entries li{ border-top:1px solid var(--rule); padding:1.3rem 0; margin:0; }
+.entries li:last-child{ border-bottom:1px solid var(--rule); }
+.entries h3{ margin:0 0 .35rem; font-size:1.12rem; }
+/* Entry titles are the primary navigation, so they carry link color: set in ink they read
+   as section headings and the eye falls through to the secondary links below them. */
+.entries h3 a{ color:var(--accent-ink); text-decoration:none; }
+.entries h3 a:hover{ text-decoration:underline; }
+.entries p{ margin:0 0 .5rem; color:var(--muted); font-size:.94rem; }
+.entries .facts{
+  font-family:var(--mono); font-size:.68rem; letter-spacing:.06em;
+  text-transform:uppercase; color:var(--faint);
+}
+.entries .pending h3{ color:var(--faint); }
+.entries .more{ margin:.85rem 0 0; }
+.entries .more a{ font-weight:600; }
+.entries .more a::after{ content:"\00A0\2192"; }

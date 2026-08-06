@@ -1,0 +1,622 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>SeedSigner image entropy — how a photograph becomes a seed phrase</title>
+<meta name="description" content="How SeedSigner turns a photograph into a seed phrase: what the camera actually contributes, measured on instrumented hardware running the shipped code — from the live preview frames to the final photograph — and what you have to do yourself.">
+<link rel="stylesheet" href="../assets/fonts.css">
+<link rel="stylesheet" href="../assets/series.css">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 16 16%22><text y=%2213%22 font-size=%2213%22>&#128247;</text></svg>">
+</head>
+<body>
+<button class="themetoggle" type="button" aria-label="Toggle light and dark theme">&#9681;</button>
+<div class="wrap">
+
+<header class="masthead">
+  <p class="eyebrow">AI analysis &middot; SeedSigner</p>
+  <h1>SeedSigner image entropy</h1>
+  <p class="standfirst">An AI analysis of how SeedSigner turns a photograph into a seed phrase.
+  Measured on instrumented hardware running the shipped code, on four physical devices, from the
+  first preview frame to the final photograph. Every claim is reproducible, and the raw captures
+  are published so you can check them.</p>
+  <dl class="meta">
+    <div><dt>Version</dt><dd>0.8.7</dd></div>
+    <div><dt>History</dt><dd>Since v0.4.3</dd></div>
+    <div><dt>Captures</dt><dd>32 runs, 4 units</dd></div>
+    <div><dt>Model</dt><dd>Claude Fable 5</dd></div>
+  </dl>
+</header>
+
+<section class="short">
+  <span class="tag">The short version</span>
+  <p class="verdict">Every measured capture cleared what a seed needs. How comfortably is decided
+  by light, not by what you photograph.</p>
+  <ul>
+    <li>Any lit scene, a bookshelf or a blank wall, measured <b>1.4 to 3.1 million</b> bits of
+    unpredictability against the <b>256</b> a 24-word seed needs, on every device tested.</li>
+    <li>With the lens completely blocked from all light, the design's layered inputs thin
+    <em>together</em>: the safety layer of preview frames can contribute exactly zero, and the
+    thinnest measured capture cleared the requirement by <b>1.5&times;</b>.</li>
+    <li>Every release since the feature's 2021 introduction hashes the final photograph
+    unconditionally; the chain's composition never weakened.</li>
+    <li>Neither the device nor your eyes can grade a capture's entropy after the fact. But as
+    long as you point at a <b>normally lit scene</b>, the margin is thousands of times what a
+    seed needs.</li>
+  </ul>
+</section>
+
+<div class="note">
+  <span class="tag">Two documents</span>
+  <p><strong>This document explains what the camera contributes, what the measurements found, and
+  what you have to do yourself.</strong> It is written for a person deciding how to use the device,
+  and everything you need in order to generate a seed safely is here.</p>
+  <p>The measurements themselves, the methods that produced them, the full release history, every
+  concern raised with its disposition, and what was <em>not</em> verified are in a companion
+  document: <a href="evidence.html"><strong>data and methodology</strong></a>. It takes an AI-first
+  approach, organized for checking claims one by one rather than for reading straight through. Work
+  through it yourself if you want to, and if you would rather have a claim on this page checked
+  than take it on trust, pointing a model at it is the quickest route.</p>
+</div>
+
+<nav class="toc">
+  <span class="tag">Contents</span>
+  <ol>
+    <li><a href="#implementation">The implementation</a></li>
+    <li><a href="#unique">You cannot take the same photograph twice</a></li>
+    <li><a href="#blankwall">A scene with nothing in it</a></li>
+    <li><a href="#dark">When no light reaches the sensor</a></li>
+    <li><a href="#yourrole">What you should do</a></li>
+    <li><a href="#trust">What you have to trust</a></li>
+    <li><a href="#checking">Checking this analysis</a></li>
+  </ol>
+</nav>
+
+<h2 id="implementation"><a class="anchor" href="#implementation"><span class="num">1</span>The implementation</a></h2>
+
+<p>Reviewed at tag <code>0.8.7</code>, commit <code>e0a80d4b</code>. SeedSigner builds seed
+entropy as a running SHA-256 chain in
+<a href="https://github.com/SeedSigner/seedsigner/blob/0.8.7/src/seedsigner/views/tools_views.py#L121-L190">tools_views.py</a>,
+folding in four inputs in order:</p>
+
+<div class="tablewrap">
+<table>
+  <thead><tr><th>#</th><th>Input</th><th>Source</th></tr></thead>
+  <tbody>
+    <tr><td class="num">1</td><td>CPU serial number</td><td><a href="https://github.com/SeedSigner/seedsigner/blob/0.8.7/src/seedsigner/views/tools_views.py#L151-L158">L151&ndash;158</a></td></tr>
+    <tr><td class="num">2</td><td><code>time.time()</code></td><td><a href="https://github.com/SeedSigner/seedsigner/blob/0.8.7/src/seedsigner/views/tools_views.py#L161">L161</a></td></tr>
+    <tr><td class="num">3</td><td>Live preview frames, a rolling window of up to 50</td><td><a href="https://github.com/SeedSigner/seedsigner/blob/0.8.7/src/seedsigner/views/tools_views.py#L165-L167">L165&ndash;167</a></td></tr>
+    <tr><td class="num">4</td><td>The full-resolution final image</td><td><a href="https://github.com/SeedSigner/seedsigner/blob/0.8.7/src/seedsigner/views/tools_views.py#L170">L170</a></td></tr>
+  </tbody>
+</table>
+</div>
+
+<p><strong>The first two inputs contribute almost nothing.</strong> SeedSigner OS has no real-time
+clock and no network, so the system clock starts at zero every boot. <code>time.time()</code>
+returns fractional seconds since power-on (e.g. <code>123.4567891</code>). Its unpredictability is
+therefore the sub-second timing of a button press plus however long the user took to reach the
+feature: bounded, and not something to lean on. The CPU serial is a fixed per-device value and not
+secret. The code's own comment calls this &ldquo;modest entropy&rdquo;, which is fair. <strong>The
+security of this feature rests on inputs 3 and 4.</strong></p>
+
+<p>Those two carry everything, and the raw quantity they hand over is not small. On the standard
+240-pixel display:</p>
+
+<div class="tablewrap">
+<table>
+  <thead><tr><th>Stage</th><th>Resolution</th><th>Format</th><th class="num">Bits each</th></tr></thead>
+  <tbody>
+    <tr><td>Preview frames (up to 50)</td><td class="num">240 &times; 240</td><td>RGBA, 32 bits/px*</td><td class="num">1,382,400*</td></tr>
+    <tr><td>Final image</td><td class="num">480 &times; 480</td><td>RGB, 24 bits/px, JPEG-decoded</td><td class="num">5,529,600</td></tr>
+  </tbody>
+</table>
+</div>
+
+<p style="font-size:.85rem;color:var(--muted);margin-top:-.6rem">* Preview frames are stored and
+hashed as RGBA, but the alpha channel is a constant 255 in every pixel of every frame: it never
+varies, so it can never carry anything. The count keeps only the 24 RGB bits per pixel that
+can.</p>
+
+<p>Fifty preview frames at 1,382,400 bits each, plus the final image, is
+<strong>74,649,600 bits</strong> going into the chain. A 24-word seed needs
+<strong>256</strong>.</p>
+
+<p>Those are the most over-readable numbers in this document, so take them for what they are.
+<strong>Nothing guarantees that any of those bits carry anything of value.</strong> A frame is a
+container, and how much unpredictability it holds depends on what the camera was pointed at and on
+the state of the sensor. Establishing what the containers actually carry is what the rest of this
+analysis does.</p>
+
+<div class="note">
+  <span class="tag">A margin is not a score</span>
+  <p><strong>SHA-256 emits 256 bits, regardless of how much data goes in.</strong> Once at least 256 bits of
+  unpredictability have gone into it, everything beyond that is extraneous. It is still hashed and
+  it still changes the result, but it cannot make the seed any harder to attack.</p>
+  <p>So 256 is a threshold rather than a target to beat, and a large margin does not mean a
+  proportionally stronger seed. It means the threshold is cleared with room to spare. Anyone
+  attacking a seed made this way is attacking 256 bits, not a multi-million-bit photograph. The
+  margin matters at the thin end, not the thick end, which is why this analysis spends most of its
+  time where the sensor is starved of light.</p>
+  <p><strong>Every figure quoted here is measured against 256, the 24-word case</strong>, because it
+  is the stricter of the two. A 12-word seed keeps only the first 128 bits of the digest
+  (<a href="https://github.com/SeedSigner/seedsigner/blob/0.8.7/src/seedsigner/views/tools_views.py#L172-L174">tools_views.py
+  L172&ndash;174</a>), so its threshold is 128 and every margin below doubles against it.</p>
+</div>
+
+<h2 id="unique"><a class="anchor" href="#unique"><span class="num">2</span>You cannot take the same photograph twice</a></h2>
+
+<p>A reasonable worry about generating a seed from a camera: what if you photograph the same
+thing twice and get the same seed? Point the device at the same desk on two different days, or
+take two shots in a row without moving, and it feels as though the result might repeat.</p>
+
+<p>For the final photograph, it cannot, and this section is the demonstration. <strong>Two
+photographs of the same scene are never the same photograph.</strong> Be precise about the claim:
+it is not that no individual pixel repeats. Plenty do. What never repeats is the frame taken as a
+whole. Two things guarantee it.</p>
+
+<ol>
+  <li><strong>The camera moves.</strong> Held in a hand, it is impossible to avoid some movement
+  changing where it is aimed.</li>
+  <li><strong>More importantly, the sensor is imperfect.</strong> Every read adds noise of its
+  own, from heat in the sensor and from the readout electronics that turn what it collected into
+  numbers. A camera module costing a few dollars is a very noisy one, but that is not really the
+  point: <strong>a perfect sensor does not exist, at any price.</strong> Every frame carries a
+  fresh dose of its sensor's own imprecision.</li>
+</ol>
+
+<p>And a hash has no notion of similarity. Change a single pixel by one step and the end result is
+a completely different seed, so <em>nearly</em> the same photograph is worth nothing to anyone
+trying to repeat your result. Only an exact byte-for-byte match would do it.</p>
+
+<div class="note">
+  <span class="tag">Where these images come from</span>
+  <p><strong>No SeedSigner release saves a captured image anywhere, ever.</strong> On a release,
+  the preview frames and the final photograph exist only in memory, are fed through the SHA-256
+  chain, and are gone; nothing is written to the microSD card, and there is nothing on the device
+  to read back afterward.</p>
+  <p>Every frame shown in this analysis therefore comes from a purpose-built
+  <strong>instrumented build</strong>, modified just for the purposes of this analysis: v0.8.7
+  plus a small patch that writes the exact bytes the app is about to hash out to the microSD
+  card, an instant before hashing them. The patch leaves the camera code untouched, so the bytes
+  are precisely what a release would have hashed in the same scene. How the build is made,
+  verified against the release, and reproduced is in the
+  <a href="evidence.html">companion document</a>.</p>
+</div>
+
+<p>Below are two consecutive captures of a lit bookshelf, the device resting on a table, taken
+back to back as fast as the hardware can capture: the second followed the first by 0.64 seconds.
+Nothing was moved or touched between them. These are the exact bytes v0.8.7 fed into its SHA-256
+chain, dumped before hashing.</p>
+
+<figure class="wide">
+  <div class="plates">
+    <div class="plate"><div class="lbl">Capture 1, as recorded</div><img src="figures/09_lit_frame00_as_shot.png" alt="First capture: a shelf of books photographed square on, spines and titles legible."></div>
+    <div class="plate"><div class="lbl">Capture 2, next in the burst</div><img src="figures/10_lit_frame01_as_shot.png" alt="Second capture of the same shelf, visually identical to the first."></div>
+  </div>
+  <figcaption>The same shelf, twice, 0.64 seconds apart.</figcaption>
+</figure>
+
+<p>To the eye they are the same photograph. In the data, <strong>80.82% of the frame's color
+values are different</strong> between the two. Subtract one capture from the other and amplify
+what is left, and you can see where: the entire scene subtracts away, and what remains is what
+changed between the two exposures. Notice that the change covers the frame rather than collecting
+in one place.
+That is the signature of sensor noise; something moving in the room would leave its change where
+the something was.</p>
+
+<figure class="wide">
+  <div class="plates">
+    <div class="plate"><div class="lbl">Difference &times;12</div><img src="figures/11_lit_difference_x12.png" alt="The difference between the two captures, amplified twelve times: a dense field of color noise across the whole frame."></div>
+    <div class="plate"><div class="lbl">Difference &times;40</div><img src="figures/12_lit_difference_x40.png" alt="The same difference amplified forty times, filling the frame."></div>
+  </div>
+  <figcaption>The difference between the two captures, amplified at fixed linear gains of
+  &times;12 and &times;40, clipped.</figcaption>
+</figure>
+
+<p>Magnify a small patch and let the two captures alternate, and you can watch it happen: the
+lettering holds perfectly still while the surface crawls. <strong>97.5% of the pixels in that
+crop differ between the two.</strong> Differing is a low bar, and that is the point: a pixel
+counts if even one of its three color values moved by a single step, and most of these moved by
+only a step or two. A change that slight is nearly invisible to the eye, and it is everything to
+a hash.</p>
+
+<figure class="wide">
+  <div class="plates">
+    <div class="plate"><div class="lbl">Captures 1 and 2 alternating, 96&times;96 px at 6&times;</div><img src="figures/13_lit_detail_blink.png" alt="Animation alternating between the same magnified region of the two captures every half second. The lettering holds still while the surface crawls."></div>
+    <div class="plate"><div class="lbl">Their difference, &times;12</div><img src="figures/16_lit_detail_difference.png" alt="Magnified detail of the difference between the two captures: dense multicolored noise."></div>
+  </div>
+  <figcaption>Left: the same region of both captures, swapped every half second. The animation is
+  lossless, so every pixel that appears to move is a pixel that moved. Right: the difference
+  itself, amplified &times;12.</figcaption>
+</figure>
+
+<p>The scale of it, across the four-device lit baseline series:</p>
+
+<div class="sgrid">
+  <div><div class="n">80.82%</div><div class="k">of this pair's color values differ between two consecutive captures</div></div>
+  <div><div class="n">98.89%</div><div class="k">of the frame's byte positions changed at least once across the ten-capture series</div></div>
+  <div><div class="n">0</div><div class="k">repeated final images in 320 captures across every retained series, lit and dark</div></div>
+</div>
+
+<p>That last figure is the one that answers the worry. Every final photograph taken in this work
+was distinct from every other, under the most favorable conditions for a repeat that could
+reasonably be arranged: a device that never moved, a scene that never changed, and shots taken
+back to back as fast as the hardware allows.</p>
+
+<p>One scope note, because it matters later: that claim is about the <em>final photograph</em>.
+The preview frames in input 3 are a different story (<a href="#dark">section 4</a>).</p>
+
+<h2 id="blankwall"><a class="anchor" href="#blankwall"><span class="num">3</span>A scene with nothing in it</a></h2>
+
+<p>The bookshelf above is a busy scene: edges, text, texture, color. The advice that circulates
+for camera entropy is to photograph something like it, and the worry that circulates alongside is
+the opposite case. <em>What if there is nothing to look at? Is a blank wall a weak seed?</em></p>
+
+<p>It was measured directly. A blank white wall, lit by ordinary window light, photographed on a
+Pi Zero resting motionless: the maximally boring capture this feature can produce, no scene
+detail, no camera motion, no artificial light. These are the exact bytes the instrumented v0.8.7
+build fed into its chain.</p>
+
+<figure class="wide">
+  <div class="plates">
+    <div class="plate"><div class="lbl">Capture 1, as recorded</div><img src="figures/whitewall_final_a_as_shot.png" alt="First capture: a featureless pale wall with a soft light gradient, nothing in frame."></div>
+    <div class="plate"><div class="lbl">Capture 2, three frames later</div><img src="figures/whitewall_final_b_as_shot.png" alt="Second capture of the same wall, visually identical to the first."></div>
+  </div>
+  <figcaption>The blank wall, twice, on a motionless device. The wall is white; auto white balance
+  renders it with a pale blue-green cast, and the soft gradient is part room light, part natural
+  vignetting in the camera's optics. This is the pair with the smallest measured difference of the
+  run's 45 (frames 03 and 06).</figcaption>
+</figure>
+
+<p>There is nothing to tell apart by looking. In the data, even this most-alike pair of the run's
+45 differs in <strong>77.69% of the frame's color values</strong>. In the magnified crop,
+everything that moves is noise, because noise is all there is. And the same subtraction as before
+shows the whole frame at once: the wall subtracts away, and a dense field of per-pixel sensor
+noise remains.</p>
+
+<figure class="wide">
+  <div class="plates">
+    <div class="plate"><div class="lbl">Captures 1 and 2 alternating, 96&times;96 px at 6&times;</div><img src="figures/whitewall_detail_blink.png" alt="Animation alternating between the same magnified region of the two wall captures every half second: the surface crawls with noise."></div>
+    <div class="plate"><div class="lbl">Difference &times;40</div><img src="figures/whitewall_diff_x40.png" alt="The difference between the two wall captures amplified forty times: dense multicolored noise filling the entire frame."></div>
+  </div>
+  <figcaption>Left: the center of the frame, 96&times;96 pixels at 6&times;, alternating between
+  the captures every half second, lossless; 88.3% of the pixels in the crop differ. Right: the
+  difference between the two captures, amplified &times;40 (fixed linear gain, clipped), the same
+  processing as the bookshelf plates so the two sets compare directly.</figcaption>
+</figure>
+
+<p>The numbers behind the plates. Like every figure in this analysis, they come from the more
+conservative of the two estimation methods used, the one sized to what an attacker guessing a
+seed actually faces; the method and its limits are in the
+<a href="evidence.html">companion document</a>.</p>
+
+<div class="sgrid">
+  <div><div class="n">1,490,163</div><div class="k">bits, stationary blank wall, worst pair of 45. 5,820&times; what a seed needs</div></div>
+  <div><div class="n">20 of 20</div><div class="k">preview frames distinct in the stationary run's window. Hand shake is not what the entropy rests on</div></div>
+  <div><div class="n">&lt;10%</div><div class="k">difference in measured unpredictability, blank wall versus bookshelf, same device</div></div>
+</div>
+
+<p><strong>A featureless scene is not a degenerate scene.</strong> The blank wall landed within
+10% of the same unit's bookshelf figure, and essentially every byte position in the frame
+(691,192 of 691,200) changed at least once across its ten captures, against 98.89% for the
+bookshelf. Scene structure contributes
+almost nothing to these figures; the entropy is per-pixel sensor noise, and a uniformly lit field
+exercises it as fully as a cluttered one. The worry about the blank wall conflates two different
+things, a featureless scene and a light-starved sensor, and the measurements separate them
+cleanly: what decides everything is whether light reaches the sensor at all, not what the light
+is bouncing off. The next section is about what happens when it stops arriving.</p>
+
+<div class="note">
+  <span class="tag">The approach is well established</span>
+  <p>Cloudflare generates part of its production randomness from a camera aimed at a wall of lava
+  lamps, <a href="https://blog.cloudflare.com/harnessing-office-chaos/">LavaRand</a>, in service
+  since 2017; Silicon Graphics patented the idea in 1996. Those systems point a camera at a
+  deliberately unpredictable process. The measurements here say the choice of subject is the least
+  important part: point it at anything, so long as the anything is lit.</p>
+</div>
+
+<h2 id="dark"><a class="anchor" href="#dark"><span class="num">4</span>When no light reaches the sensor</a></h2>
+
+<p>Everything above happened in the light. This section is what the same hardware and the same
+code do when essentially no light reaches the sensor at all, and it is where this analysis found
+the things the project should fix. To be clear about the bottom line before the detail:
+<strong>every measured capture, including every light-starved one, still cleared the 256 bits a
+24-word seed needs.</strong> What follows is about how thin the clearance ran, and about a
+layered design quietly becoming a single layer without anything noticing.</p>
+
+<p>Be precise about the condition, because &ldquo;dark&rdquo; undersells it: in these captures
+the lens was completely or effectively blocked. That is not a dim room; it is the device set
+down lens-down on a desk in shadow, or the lens deliberately sealed. Nothing between ordinary
+lighting and that near-blackout was measured, and the few runs where a small light leak crept in
+measured roughly ten to over a hundred times higher than their properly blocked siblings, so
+everything below lives at the blackout end of the axis, not merely in low light. The route that
+matters is the mundane one: face-down on a desk in ordinary shadow, no seal, no enclosure, no
+intent. (Deliberately engineered light seals were also tried; the plain desk produced lower
+figures than any of them. The companion document carries that comparison.)</p>
+
+<h3 id="darkfinal"><a class="anchor" href="#darkfinal">What the final image has left</a></h3>
+
+<figure class="wide">
+  <div class="plates">
+    <div class="plate"><div class="lbl">Capture, as recorded</div><img src="figures/dark_final_a_as_shot.png" alt="A face-down capture as recorded: black."></div>
+    <div class="plate"><div class="lbl">Same capture, &times;60</div><img src="figures/dark_final_a_x60.png" alt="The same capture amplified sixty times: a flat green field."></div>
+  </div>
+  <figcaption>A face-down capture, as recorded and amplified &times;60 (fixed linear gain,
+  clipped).</figcaption>
+</figure>
+
+<p>Read the amplified plate carefully, because the flat green field is not the entropy. It is the
+green channel sitting at exactly 1 across nearly the whole frame, a constant pedestal that
+amplification turns into a wash; green rises first because the sensor has twice as many green
+photosites. The information is in the sparse variation on top of that pedestal, and there is
+almost none of it left.</p>
+
+<p>Subtracting this run's two most-alike captures makes the point numerically: <strong>105 of the
+frame's 691,200 values differ, 0.0152%, and the pair measures 113 bits</strong>, below the 256 a
+24-word seed needs. Set beside it, the lit bookshelf difference from section 2, at one fifth the
+amplification: 1.5 million bits against 113. The distance between those two plates is what light
+is worth.</p>
+
+<figure class="wide">
+  <div class="plates">
+    <div class="plate"><div class="lbl">Worst pair difference &times;60, dilated</div><img src="figures/dark_final_diff_x60_dilated5.png" alt="The difference between the two darkest captures: a nearly black field with a scattering of isolated specks."></div>
+    <div class="plate"><div class="lbl">Lit difference &times;12, for comparison</div><img src="figures/11_lit_difference_x12.png" alt="The lit bookshelf difference at one fifth the amplification: dense noise across the whole frame."></div>
+  </div>
+  <figcaption>Left: the difference between the run's two most-alike captures, amplified &times;60
+  and 5&times;5 max-dilated; without the dilation its 105 changed values are invisible. Right: the
+  lit bookshelf difference, &times;12, no dilation.</figcaption>
+</figure>
+
+<p>That 113-bit final image is the lowest measured anywhere in this work, and it was not unique:
+face-down desk runs on two boards produced final images of 113, 177, 190 and 221 bits, each below
+the 256-bit requirement on its own. Session-to-session spread under identical conditions is
+enormous (the same desk position also produced 26,318 bits minutes earlier, with nothing moved),
+so these are points from a wide distribution, not a floor. But they establish the reachable state:
+<strong>setting the device down lens-down on an ordinary desk can push the final photograph below
+what a 24-word seed needs, with no intent and no equipment.</strong></p>
+
+<h3 id="darkpreview"><a class="anchor" href="#darkpreview">What the safety net actually held</a></h3>
+
+<p>A final image below 256 was supposed to be what the preview layer exists for: up to 50 more
+frames, each a separate exposure, chained ahead of it. These captures record what that layer
+actually held, and with the lens blocked the answer is:
+<strong>almost nothing, and sometimes exactly nothing.</strong></p>
+
+<figure class="wide">
+  <div class="plates">
+    <div class="plate"><div class="lbl">A dark live preview frame, &times;60</div><img src="figures/dark_preview_live18_x60.png" alt="A live dark preview frame amplified sixty times: a nearly solid green field."></div>
+    <div class="plate"><div class="lbl">Two adjacent live frames, difference &times;60</div><img src="figures/dark_preview_diff18v19_x60.png" alt="The difference between two adjacent live preview frames: sparse green specks on black."></div>
+  </div>
+  <figcaption>Left: live frame 18 of the 113-bit run's preview window, amplified &times;60 (fixed
+  linear gain, clipped). Right: the difference between adjacent live frames 18 and 19, 820 changed
+  color bytes (0.47%), amplified &times;60, no dilation. The black constant frame that filled the
+  other 46 slots is stated rather than pictured: its SHA-256 (<code>6f77f852&hellip;</code>) is
+  computable from the panel size alone.</figcaption>
+</figure>
+
+<p>The left plate is one of only four live frames in the 113-bit run's 50-slot window, and it
+looks like the amplified final image for a reason: it is the same near-binary green plane, 99.4%
+of its pixels at green&nbsp;=&nbsp;1, the whole frame one quantization event. The other 46 slots
+held a pure-black constant frame, byte for byte. The right plate is why that distinction matters:
+two adjacent live frames differ in just 820 of their color bytes, and that sparse flicker is the
+whole of the layer's genuine per-read contribution.</p>
+
+<p>The mechanism: with essentially no signal arriving, the preview path quantizes the frame all
+the way to zero. When that happens, a
+slot in the window holds pure black, every value identical, and <strong>an attacker can compute
+that frame, and its contribution to the chain, from the panel dimensions alone</strong>. Hashing a
+value the attacker already knows adds zero unpredictability, no matter how many times it is
+hashed. In the measured dark windows on the standard panel, 45 to 50 of the 50 slots held that
+constant or a repeat.</p>
+
+<p>On one of the three boards it went all the way: <strong>in six out of six lens-blocked runs,
+across two boots, all 50 slots were the known constant, and the preview layer contributed exactly
+zero.</strong> The seed rested on the final image alone. The thinnest of those runs totaled
+<strong>389 bits against the required 256: a 1.52&times; margin</strong>, on an estimator that
+if anything overstates. (For a 12-word seed the same run clears its 128-bit requirement at
+3.0&times;.)</p>
+
+<p>Three findings sharpen this from an anecdote into a design problem:</p>
+
+<ol>
+  <li><strong>The failure is common-cause.</strong> Both layers watch the same scene through the
+  same auto-exposure. The light starvation that thins the final image is the same starvation that
+  collapses the preview window, and it also thins what little the surviving live frames carry
+  (the worst adjacent live pair measured 469 bits). The layers do not fail independently, so
+  counting layers is not counting safety.</li>
+  <li><strong>Which layer goes first is a per-unit accident.</strong> Under the same blackout
+  condition, auto-exposure settled at its gain ceiling on three of the four units and 11% lower on
+  the fourth, stably, in every recorded session. Every unit at the ceiling that had its window
+  measured produced at least a few live frames; the below-ceiling unit produced none, ever. The
+  correlation is unanimous but is exactly that, a correlation over four units; nothing in the code
+  controls or even observes which side of the knife-edge a device sits on.</li>
+  <li><strong>There is a second route to the same state.</strong> Holding a button down through
+  the preview causes the code to return before appending any frame, deterministically, on every
+  measured attempt: zero preview frames, in any lighting. This is a quirk introduced in v0.7.0 by
+  an unrelated crash fix. A blocked lens and a held button are independent, accidental, and both
+  reduce the four-input chain to one meaningful input.</li>
+</ol>
+
+<div class="note warn">
+  <span class="tag">You cannot trust the screen here</span>
+  <p>In this blocked-lens condition, what the screen shows tells you nothing about what the
+  capture carried. In our testing, a pure black review screen came from captures holding several
+  times what a seed needs, and a faint noisy image from captures far below it. The working is in
+  the <a href="evidence.html">companion document</a>.</p>
+  <figure style="margin:1rem 0 .3rem">
+    <div class="plate"><div class="lbl">What the review screen displayed</div><img src="figures/dark_review_stretch_frame08.png" alt="The review screen's display for a capture from the 113-bit run: a saturated green field broken by patches of black speckle."></div>
+    <figcaption>The review screen's own output (autocontrast, cutoff 2, rendered at the image
+    library version the release ships) for a capture from the run measuring 113 bits, less than
+    half of what a 24-word seed needs. It looks like noise; the measurement says it carried
+    almost none.</figcaption>
+  </figure>
+</div>
+
+<p><strong>What would actually fix it</strong> (for the project, not the user): append the frame
+before checking the button, so a held button cannot skip the window; and more fundamentally, have
+the code check what this analysis measured, a count of <em>distinct</em> frame digests in the
+window, before accepting a capture. Appending more frames is no fix on its own, because with the
+lens blocked the appended frames are the known constant. The companion document carries the full
+accounting and the measured evidence behind each recommendation.</p>
+
+<p>Scope, stated honestly in both directions: this is a real design finding, not a break. No
+measured capture produced a weak seed; the thinnest margin observed was 1.52&times; on a
+deliberately conservative estimator, in a state (face-down in shadow, or a held button) that no
+ordinary capture visits. But the margins in that state are decided by per-unit accidents and
+session-to-session luck spanning a factor of a hundred or more, the design's redundancy argument
+does not hold there, and nothing on the device would notice if a future hardware or tuning change
+ate the remaining 1.52&times;.</p>
+
+<h2 id="yourrole"><a class="anchor" href="#yourrole"><span class="num">5</span>What you should do</a></h2>
+
+<p>Everything above compresses to one instruction and two habits.</p>
+
+<h3 id="do-light"><a class="anchor" href="#do-light">Capture in a lit scene</a></h3>
+
+<ul>
+  <li><strong>Any lit scene works.</strong> The bookshelf and the blank wall measured within 10%
+  of each other, and every lit capture on every device cleared the requirement thousands of times
+  over. What you photograph does not matter; that it is lit is everything.</li>
+  <li><strong>Do not capture with a light-starved sensor</strong>: face-down, lens covered, or
+  aimed into a bag or an unlit space. Nothing on the screen will warn you, and the margins there,
+  while never observed to fail, run as thin as 1.5&times; and are governed by luck.</li>
+  <li><strong>The one lit exception:</strong> do not aim directly into a bright light source. A
+  saturated sensor reads maximum everywhere and the frame-to-frame variation is truncated. It
+  takes deliberate effort to arrange; ordinary well-lit scenes, windows included, are not a
+  problem.</li>
+</ul>
+
+<h3 id="do-tap"><a class="anchor" href="#do-tap">Tap the button, do not hold it</a></h3>
+
+<ul>
+  <li><strong>A held button skips the preview layer entirely</strong>: it carries through the
+  preview, the capture and the accept screens in one gesture, and no frame is ever chained.</li>
+  <li><strong>A tap gives the design the 50 frames it was built around.</strong> The window fills
+  in roughly three and a half to six seconds of live preview, depending on the board, so the few
+  seconds spent aiming are already doing that work. Holding the preview open longer does not add
+  more frames, only fresher ones.</li>
+</ul>
+
+<h3 id="do-watch"><a class="anchor" href="#do-watch">Watch the preview, and know what watching buys you</a></h3>
+
+<ul>
+  <li><strong>Watching confirms the camera is alive and seeing light.</strong> A live preview
+  tracks your hand movement; a dead, disconnected or covered camera shows black or a frozen
+  image. That check is real and worth doing.</li>
+  <li><strong>The screen tells you the camera works. The scene decides what it collects.</strong></li>
+</ul>
+
+<h2 id="trust"><a class="anchor" href="#trust"><span class="num">6</span>What you have to trust</a></h2>
+
+<p>The measurements say the camera path supplies abundant entropy in the light and cleared the
+requirement everywhere it was measured. They cannot say <em>your particular seed</em> did, and no
+measurement ever can. That gap is worth stating precisely, because image entropy sits in a
+different trust relationship from the other ways SeedSigner can make a seed, and the difference is
+structural rather than a matter of code quality.</p>
+
+<h3 id="three-steps"><a class="anchor" href="#three-steps">Three steps, and only two of them transfer</a></h3>
+
+<p>Trusting a camera-generated seed is really a chain of three:</p>
+
+<ol>
+  <li><strong>Verify the process.</strong> Read the code and establish what it does with the
+  bytes. That is what these two documents are: the chain composition, the release history, and
+  measurements of what the code actually feeds into SHA-256.</li>
+  <li><strong>Verify you are running that code.</strong> Source review says nothing about the
+  binary on your microSD card. Release images have been
+  <a href="https://github.com/SeedSigner/seedsigner/blob/0.8.7/README.md?plain=1#L108">reproducible
+  since v0.7.0</a>, by the project's own statement, and the
+  <a href="https://github.com/SeedSigner/seedsigner-os/blob/v0.8.7/docs/building.md">build
+  procedure</a> is documented separately, so the strong form is to build from source and confirm
+  you get the image the project published, byte for byte. The weaker form is to check the
+  published manifest hash and its
+  <a href="https://github.com/SeedSigner/seedsigner/blob/0.8.7/README.md#verifying-your-download">PGP
+  signature</a>. That matters more than it sounds: the project's own README states that release
+  images are prepared and signed by one individual, who is the sole holder of the signing keys.
+  Reproducible builds exist precisely so that trust does not have to end there. Skipping this
+  step makes step 1 decorative.</li>
+  <li><strong>Choose the scene and watch the capture.</strong> The last control in the chain is
+  performed by a person, and after section 4 its scope is clear: watching confirms the camera is
+  alive, and choosing a lit scene is what actually provisions the entropy. Verified code,
+  verified to be the code that is running, still cannot make that choice for you.</li>
+</ol>
+
+<p class="pull">Steps 1 and 2 are done once and are the same for everyone. Step 3 is the only
+per-capture control, and <em>only you can ever perform it</em>.</p>
+
+<h3 id="no-export"><a class="anchor" href="#no-export">Why the input cannot be exported</a></h3>
+
+<p>The obvious fix would be for the device to write out the bytes it hashed, so someone could
+check them elsewhere. Consider what that would take. <strong>The entropy inputs are enormous:</strong>
+691,200 bytes for the final image, plus fifty preview frames at 230,400 bytes each, roughly
+<strong>12 MB</strong> in total. SeedSigner's only data channels are the camera coming in and the
+screen going out, and a QR code carries a few kilobytes; 12 MB is upwards of four thousand of them.
+<strong>The only practical channel would be the microSD card.</strong></p>
+
+<p><strong>And that image data is your secret.</strong> It is what the seed is derived from, so
+holding it is effectively holding the seed. <strong>SeedSigner never writes a secret to persistent
+storage.</strong> The entropy inputs stay in RAM and are released once the seed is derived.</p>
+
+<p class="pull">Image entropy puts an extraordinary quantity of unpredictability into your seed.
+The price is that you can only verify the <em>process</em>, but not the individual outcomes.</p>
+
+<p>Dice differs on exactly this point, and it is the only difference that matters here: rolls are
+small enough to write on paper, so an individual dice result stays externally checkable forever,
+while the camera data exists nowhere but the device that hashed it (the
+<a href="../dice/index.html">dice analysis</a> works through that method).</p>
+
+<p>None of which makes camera entropy weaker than dice. A lit capture feeds the chain orders of
+magnitude more unpredictability than a dice session does. But once a camera seed is generated, no
+one can go back and confirm anything about it, which is why the process verification above is the
+whole of what can be offered.</p>
+
+<h2 id="checking"><a class="anchor" href="#checking"><span class="num">7</span>Checking this analysis</a></h2>
+
+<p>Every figure quoted here was computed from raw camera frames that are published alongside this
+document, roughly 340 MB across 32 capture runs on 4 physical devices, exactly as the device
+handed them to SHA-256. Nothing rests on a number you have to take on trust.</p>
+
+<p>The working is in the companion document,
+<a href="evidence.html"><strong>data and methodology</strong></a>: the canonical figures with the
+estimator behind each one, the preview-window structure of every dark run, how the instrumented
+builds were made and provenance-locked to the release, every release from 2021 checked one by one,
+every concern raised with its disposition and the weakest point of that disposition, what was
+<em>not</em> verified, and the commands that recompute every number from the published frames.</p>
+
+<p>It takes an AI-first approach: dense, declarative, and ordered so a reviewer can work claim by
+claim rather than follow an argument. That structure is what makes it cheap to check, and pointing
+a model at it is the fastest way to get an answer. It is also perfectly readable if you would
+rather go through it yourself.</p>
+
+<p><strong>Corrections and challenges are welcome, particularly on the measurements.</strong> There
+is no published external review of this path: no independent measurement and no third-party
+reproduction of these figures. The raw captures ship precisely so that can change. Work that
+contradicts these numbers is more useful than work that confirms them.</p>
+
+<footer>
+  <p>An AI-assisted analysis by SeedSigner's lead developer. Not an independent audit, not a
+  certification, and not an official SeedSigner project publication.</p>
+  <p>Scope: image entropy only. Not a whole-product audit. Methods, data and provenance:
+  <a href="evidence.html">data and methodology</a>.</p>
+</footer>
+
+</div>
+<script>
+(function(){
+  var b = document.querySelector('.themetoggle');
+  var saved = null;
+  try { saved = localStorage.getItem('theme'); } catch (e) {}
+  if (saved) document.documentElement.setAttribute('data-theme', saved);
+  b.addEventListener('click', function(){
+    var cur = document.documentElement.getAttribute('data-theme');
+    if (!cur) {
+      cur = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+    }
+    var next = cur === 'dark' ? 'light' : 'dark';
+    document.documentElement.setAttribute('data-theme', next);
+    try { localStorage.setItem('theme', next); } catch (e) {}
+  });
+})();
+</script>
+</body>
+</html>

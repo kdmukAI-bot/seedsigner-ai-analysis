@@ -1,0 +1,67 @@
+name: Pages (SeedSigner analysis series)
+
+# Publishes the repo root verbatim as the series site, using the official GitHub
+# Pages action. There is no build step: every document is hand-written static
+# HTML that links `assets/series.css` and `assets/fonts.css`, and the evidence
+# scripts and data files are meant to be served exactly as committed.
+#
+# Deploys ONLY on merge to main (push) or manual dispatch. There is deliberately
+# no `pull_request` trigger, so nothing is published from an unmerged branch.
+#
+# Security posture:
+#   - Top-level token is read-only. The deploy job adds only the minimal
+#     Pages-publish scopes (pages: write + id-token: write). Nothing takes
+#     contents: write and nothing pushes to a branch.
+#   - Actions are pinned to commit SHAs.
+#   - Unlike the sibling Pages workflows (seedsigner-lvgl-screens, btc-datagen),
+#     this is a SINGLE job rather than a build/deploy privilege split. That split
+#     exists to keep a write-scoped token away from steps that execute project
+#     code; here no project code runs at all, only checkout and packaging, so the
+#     split would buy nothing. Reinstate it if a build or verification step is
+#     ever added.
+#
+# One-time setup, done once in the repo settings and NOT expressible here:
+#   Settings -> Pages -> Build and deployment -> Source = "GitHub Actions".
+#   Optionally restrict the `github-pages` environment to `main`
+#   (Settings -> Environments) for platform-level enforcement.
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [ main ]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: read
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deploy.outputs.page_url }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
+        with:
+          fetch-depth: 1
+
+      # The repo root IS the site root: index.html is the landing page and each
+      # analysis is a subdirectory. The action excludes .git and .github
+      # unconditionally, and dotfiles by default, so .gitignore and .claude/ stay
+      # out of the published artifact.
+      - name: Upload Pages artifact
+        uses: actions/upload-pages-artifact@fc324d3547104276b827a68afc52ff2a11cc49c9  # v5.0.0
+        with:
+          path: .
+
+      - name: Deploy to GitHub Pages
+        id: deploy
+        uses: actions/deploy-pages@cd2ce8fcbc39b97be8ca5fce6e763baed58fa128  # v5.0.0
