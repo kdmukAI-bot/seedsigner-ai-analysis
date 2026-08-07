@@ -101,6 +101,7 @@ a.cid:hover{ color:var(--accent-ink); }
     <div><dt>Version</dt><dd>0.8.7</dd></div>
     <div><dt>Raw data</dt><dd>32 runs, ~340&nbsp;MB</dd></div>
     <div><dt>Claims</dt><dd>Addressable by ID</dd></div>
+    <div><dt>Revision</dt><dd><span data-deploy-rev>working copy</span></dd></div>
   </dl>
 </header>
 
@@ -134,7 +135,13 @@ the tables. Report each finding against the claim ID it contradicts.
 Section 1 also sets out three levels of checking, the deepest being to
 rebuild the capture process and take your own frames on your own hardware.
 State which level you reached. Do not imply you captured frames if you
-only recomputed from the published ones.</div>
+only recomputed from the published ones.
+
+State the analysis revision you reviewed: the commit hash in this page's
+masthead Revision entry (also the current commit of
+https://github.com/kdmukAI-bot/seedsigner-ai-analysis, whose main branch
+this site deploys). Findings are adjudicated against that revision, and
+the document's corrections list records what has changed since.</div>
   <p>The raw frames are published precisely so a reviewer can disagree numerically. Work that
   contradicts these figures is more useful than work that confirms them.</p>
 </div>
@@ -336,6 +343,19 @@ stamps the deviation into a <code>PROVENANCE.txt</code> that ships with the data
 that moves a number is more useful than one that disputes an adjective. The
 <a href="#adjudication">adjudication record</a> states the weakest point of every disposition;
 those are the places this analysis is most likely wrong, and the intended place to start.</p>
+
+<p><strong>Pin what you reviewed.</strong> These documents are revised after publication (every
+substantive change is recorded in the <a href="#corrections">section 15 corrections list</a>), so
+name the revision your finding responds to: the commit hash of
+<a href="https://github.com/kdmukAI-bot/seedsigner-ai-analysis">the analysis repo</a> at the time
+of review, alongside the SeedSigner release the analysis itself pins (tag <code>0.8.7</code> @
+<code>e0a80d4b</code>). The hash is on the page: the masthead's Revision entry states the commit
+this page was deployed from, stamped at deploy time (a raw checkout reads "working copy" there,
+and the repo's <code>main</code> branch is what this site deploys). A finding that cites its commit stays
+adjudicable after the documents move: the diff between your commit and current shows exactly what
+changed underneath your commentary, and commentary against a superseded revision reads as
+responding to that revision rather than as silently wrong. Findings can be filed as issues on the
+repo.</p>
 
 <h2 id="ledger"><a class="anchor" href="#ledger"><span class="num">2</span>Claim ledger</a></h2>
 
@@ -1666,6 +1686,13 @@ by that author.</p>
   them.</strong></p>
 </div>
 
+<p>To submit findings, or to have published work listed here: open an issue on
+<a href="https://github.com/kdmukAI-bot/seedsigner-ai-analysis">the analysis repo</a>. Name the
+revision your work responds to (the repo commit hash at the time of review, per
+<a href="#reporting">the reporting guidance</a>) as well as the SeedSigner release you measured,
+and include your own provenance record if you captured frames. The cited commit is what keeps
+your work aligned with the version it examined when these documents are later revised.</p>
+
 <h2 id="repro"><a class="anchor" href="#repro"><span class="num">14</span>How to check this yourself</a></h2>
 
 <h3 id="fromshipped"><a class="anchor" href="#fromshipped">From the published frames, no hardware needed</a></h3>
@@ -1855,9 +1882,9 @@ deterministic reproduction path from the shipped data are now marked as such whe
 <a href="#m-18">IE-M-18</a>, the cross-sensor pattern-noise figures, and
 <a href="#m-6">IE-M-06</a>, whose held-button captures were not retained).</p>
 
-<p><strong>Corrections after publication will be recorded here</strong>, with what changed and why.
-Errors caught during drafting are in <a href="#traps">section 11</a> as reviewer aid, which is a
-different thing and is not presented as a correction history.</p>
+<p id="corrections"><strong>Corrections after publication will be recorded here</strong>, with
+what changed and why. Errors caught during drafting are in <a href="#traps">section 11</a> as
+reviewer aid, which is a different thing and is not presented as a correction history.</p>
 
 <ul>
   <li><strong>2026-08-07, difference domain made explicit.</strong> Added a paragraph to
@@ -1872,6 +1899,13 @@ different thing and is not presented as a correction history.</p>
   requires it. The burst patch (<code>21dd1fd3</code>) is unchanged, the published data predates
   the kill-switch, and no measurement or figure is affected. <a href="#repro">Section 14</a> was
   updated to match.</li>
+  <li><strong>2026-08-07, reviewer versioning guidance.</strong> The
+  <a href="#reporting">reporting guidance</a>, the masthead review prompt and
+  <a href="#analyses">section 13</a> now ask external reviewers to cite the analysis repo commit
+  they reviewed, alongside the pinned SeedSigner release, so commentary against a later-revised
+  document reads as responding to the revision it examined rather than as silently wrong. To make
+  that hash visible, both mastheads gained a Revision entry, stamped with the deployed commit by
+  the Pages workflow at deploy time. Process only; no claim, figure or measurement changed.</li>
 </ul>
 
 <h3 id="figureparams"><a class="anchor" href="#figureparams">Figure parameters</a></h3>

@@ -1,9 +1,12 @@
 name: Pages (SeedSigner analysis series)
 
-# Publishes the repo root verbatim as the series site, using the official GitHub
-# Pages action. There is no build step: every document is hand-written static
-# HTML that links `assets/series.css` and `assets/fonts.css`, and the evidence
-# scripts and data files are meant to be served exactly as committed.
+# Publishes the repo root as the series site, using the official GitHub Pages
+# action. Every document is hand-written static HTML that links
+# `assets/series.css` and `assets/fonts.css`, and the evidence scripts and data
+# files are served exactly as committed. The one deviation from verbatim: the
+# revision-stamp step below substitutes the deployed commit SHA into pages
+# carrying the `data-deploy-rev` placeholder, so external reviewers can cite
+# the exact revision they reviewed (see image-entropy/evidence.html section 1).
 #
 # Deploys ONLY on merge to main (push) or manual dispatch. There is deliberately
 # no `pull_request` trigger, so nothing is published from an unmerged branch.
@@ -16,9 +19,10 @@ name: Pages (SeedSigner analysis series)
 #   - Unlike the sibling Pages workflows (seedsigner-lvgl-screens, btc-datagen),
 #     this is a SINGLE job rather than a build/deploy privilege split. That split
 #     exists to keep a write-scoped token away from steps that execute project
-#     code; here no project code runs at all, only checkout and packaging, so the
-#     split would buy nothing. Reinstate it if a build or verification step is
-#     ever added.
+#     code; here no project code runs at all, only checkout, a fixed sed
+#     expression over static HTML (the revision stamp, which executes nothing
+#     from the repo), and packaging, so the split would buy nothing. Reinstate
+#     it if a step that executes project code is ever added.
 #
 # One-time setup, done once in the repo settings and NOT expressible here:
 #   Settings -> Pages -> Build and deployment -> Source = "GitHub Actions".
@@ -52,6 +56,19 @@ jobs:
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
         with:
           fetch-depth: 1
+
+      # Stamp the deployed commit into every page carrying the revision
+      # placeholder (the masthead "Revision" entry). Reviewers are asked to cite
+      # the revision they reviewed, and the page itself is the only place they
+      # are guaranteed to see it. In a raw checkout the placeholder reads
+      # "working copy", which is accurate there. A fixed sed expression over
+      # static HTML; executes no project code (see security posture above).
+      - name: Stamp deployed revision into pages
+        run: |
+          short="${GITHUB_SHA:0:8}"
+          link="<a data-deploy-rev href=\"https://github.com/${GITHUB_REPOSITORY}/commit/${GITHUB_SHA}\">${short}</a>"
+          find . -name '*.html' -not -path './.git/*' -print0 |
+            xargs -0 sed -i "s|<span data-deploy-rev>working copy</span>|${link}|g"
 
       # The repo root IS the site root: index.html is the landing page and each
       # analysis is a subdirectory. The action excludes .git and .github
