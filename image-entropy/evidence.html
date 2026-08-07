@@ -367,12 +367,19 @@ measured, <code>IE-I-nn</code> are inferred, <code>IE-A-nn</code> are adjudicati
 
 <div class="claim">
   <div class="claimhead"><a class="cid" id="s-4" href="#s-4">IE-S-04</a><span class="st st-verified">Verified &middot; source, every tag</span></div>
-  <p class="body"><strong>No release could ever produce a seed with zero camera contribution.</strong>
-  The final image is unconditionally hashed in every version from v0.4.3 to v0.8.7; camera failure
-  raises an exception rather than yielding a degraded seed.</p>
+  <p class="body"><strong>No release could ever produce a seed with zero camera contribution, and
+  the flow has no camera-error fallback.</strong> The final image is unconditionally hashed in
+  every version from v0.4.3 to v0.8.7. At tag 0.8.7, the capture and hashing steps catch no
+  camera exceptions (the outer <code>try</code> around the chain carries only a
+  <code>finally</code> for spinner cleanup), and a missing final image raises at the display step
+  before any hashing, so a failure that surfaces as an error or an absent frame stops the flow
+  before a seed exists. The one input with a catch-and-continue fallback is the CPU serial, which
+  falls back to the constant <code>b'0'</code> (and is counted at zero regardless).</p>
   <dl>
-    <dt>Scope</dt><dd>v0.4.3 (2021-07-31) through v0.8.7, read at each tag</dd>
-    <dt>Bears on</dt><dd>The "was it ever weaker?" question. See <a href="#history">section 7</a></dd>
+    <dt>Scope</dt><dd>Unconditional hashing: v0.4.3 (2021-07-31) through v0.8.7, read at each tag. The no-fallback trace: tag 0.8.7</dd>
+    <dt>Observed</dt><dd>One physical fault was tested on-device (2026-08-07): loosening the camera ribbon cable during the live preview froze the preview and then the entire app, which stopped responding to input. Ungraceful, but terminal: the flow cannot be completed and no seed is produced. Informal test, one unit, not instrumented; a hang is a third failure surface alongside an error and an absent frame, with the same security outcome</dd>
+    <dt>What this cannot exclude</dt><dd>A failure mode that keeps returning valid-looking frames: a re-served stale buffer (<a href="#m-8">IE-M-08</a>, measured, credited zero) or a hardware fault delivering a solid buffer (<a href="#a-3">IE-A-03</a>, its stated weakest point). Source reading cannot enumerate hardware failure behaviors, which is why the ribbon test above was worth running</dd>
+    <dt>Bears on</dt><dd>The "was it ever weaker?" question (<a href="#history">section 7</a>), and the recurring "what if the camera fails mid-flow?" reviewer question</dd>
   </dl>
 </div>
 
@@ -750,7 +757,10 @@ measured, <code>IE-I-nn</code> are inferred, <code>IE-A-nn</code> are adjudicati
   <p class="body">A frozen or stale preview would be conspicuous in normal handheld use, because a
   live preview tracks the user's own motion. The mechanism behind it is real and now measured
   (<a href="#m-8">IE-M-08</a>: the stream re-returns cached buffers under contention), and its
-  entropy cost is priced into the accounting as zero-credit duplicates.</p>
+  entropy cost is priced into the accounting as zero-credit duplicates. The one deliberately
+  induced hardware freeze (camera ribbon loosened mid-preview; see <a href="#s-4">IE-S-04</a>,
+  Observed) froze not just the preview but the whole app, input included, which is more
+  conspicuous still.</p>
   <dl>
     <dt>Residual case</dt><dd>A device resting on a surface, which is how the measurement rig was arranged and not how the feature is used</dd>
     <dt>Weakest point</dt><dd>A freshness check remains cheap insurance, and the distinct-digest health check in <a href="#oneLayer">section 8</a> subsumes it</dd>
@@ -1130,7 +1140,9 @@ PR #46. Every release since has been examined. Full working:
   <span class="tag">Was the chain ever weaker in composition? No</span>
   <p><strong>VERIFIED from source at every tag (<a href="#s-4">IE-S-04</a>). No release could produce
   a seed with zero camera contribution.</strong> The final image is unconditionally hashed in every
-  version; camera failure raises an exception rather than yielding a degraded seed.</p>
+  version, and the flow has no camera-error fallback: every camera-failure surface identified in
+  code review or observed on hardware (an error, an absent frame, and in one on-device ribbon
+  test an outright app freeze) stops the flow before a seed exists.</p>
   <p><strong>The measured configuration is the smallest the final image has ever been on the
   240&nbsp;px panel</strong> (<a href="#s-8">IE-S-08</a>): every release from v0.4.3 through v0.8.5
   captured 720&times;480, v0.8.6 reduced it to 480&times;480, and everything here was measured at
