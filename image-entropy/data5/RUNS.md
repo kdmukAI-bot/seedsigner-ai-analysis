@@ -56,12 +56,14 @@ returned **20 of 20 distinct frames** with a worst pair of 151,069 bits (590x th
 requirement from a single pair). Hand shake is not what the entropy rests on; neither is
 scene content. What both runs have that the dark runs lack is illumination.
 
-### AE state: nowhere near the dark rail
+### AE state: nowhere near the dark rail (a one-directional tell)
 
 The dark-scene failure mode rides the gain rail (digital gain 3.25/3.625, unanimous
 across all recorded dark sessions). The white wall settled at 1.46 and 2.07 with analog
 gain 1.19-2.06. As far as the pipeline is concerned this is an ordinary lit scene; the
-degenerate axis is illumination, not featurelessness.
+degenerate axis is illumination, not featurelessness. (Gain is only a one-directional
+tell: a low locked gain means a bright scene, but several dimmer lit indoor runs also
+locked at 3.1-3.6, so a high gain does not indicate darkness.)
 
 ### Cached doubles on the single-core board, again
 

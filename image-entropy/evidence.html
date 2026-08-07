@@ -5,6 +5,18 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>SeedSigner image entropy — data and methodology (machine-first)</title>
 <meta name="description" content="The measurements behind the SeedSigner image entropy analysis: canonical figures, preview-window structure, claim ledger, adjudication record and reproduction commands, written for AI review.">
+<meta property="og:type" content="article">
+<meta property="og:site_name" content="SeedSigner AI Analysis">
+<meta property="og:title" content="SeedSigner image entropy — data and methodology">
+<meta property="og:description" content="The measurements behind the analysis: canonical figures, preview-window structure, claim ledger, adjudication record and reproduction commands, written for AI review.">
+<meta property="og:url" content="https://kdmukai-bot.github.io/seedsigner-ai-analysis/image-entropy/evidence.html">
+<meta property="og:image" content="https://kdmukai-bot.github.io/seedsigner-ai-analysis/image-entropy/figures/social_card.jpg">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:image:alt" content="A photograph of a bookshelf beside the difference between it and the next capture, amplified forty times: the photograph, and the sensor noise it conceals.">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:image" content="https://kdmukai-bot.github.io/seedsigner-ai-analysis/image-entropy/figures/social_card.jpg">
+<meta name="twitter:image:alt" content="A photograph of a bookshelf beside the difference between it and the next capture, amplified forty times: the photograph, and the sensor noise it conceals.">
 <link rel="stylesheet" href="../assets/fonts.css">
 <link rel="stylesheet" href="../assets/series.css">
 <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 16 16%22><text y=%2213%22 font-size=%2213%22>&#128247;</text></svg>">
@@ -232,9 +244,11 @@ for the final image (<a href="#s-1">IE-S-01</a>). The rules every total in this 
 <p><strong>"Dark" throughout means effectively total light exclusion at the sensor: a completely
 or effectively blocked lens.</strong> The measured routes there are a device set down lens-down
 on a shadowed desk, and a deliberately sealed occlusion. Every dark run is verified in-band by
-the pixel discriminator (<a href="#m-17">IE-M-17</a>) and corroborated by auto-exposure settling
-at high digital gain (3.25&ndash;3.625, against 1.1&ndash;2.1 in every lit run). <strong>It does
-not mean a dim room.</strong> No condition between ordinary lighting and near-total blackout was
+the pixel discriminator (<a href="#m-17">IE-M-17</a>). Auto-exposure is only a one-directional
+corroborant: every properly dark run locked at its unit's stable dark gain (3.25 or 3.625), and
+a low locked gain indicates light was present, but a high locked gain indicates nothing, because
+most lit indoor runs also locked at 3.1&ndash;3.6 (only the bright wall runs locked low).
+<strong>It does not mean a dim room.</strong> No condition between ordinary lighting and near-total blackout was
 measured (<a href="#l-14">IE-L-14</a>), and every flagged light contamination of the dark state,
 however small, moved the figure upward by a large factor (roughly 7&times; to over 100&times;
 across the flagged runs), so the collapse phenomena in this document live at the blackout end of
@@ -329,7 +343,9 @@ those are the places this analysis is most likely wrong, and the intended place 
 established. <strong>IDs are the addressing scheme for review</strong> and do not change once
 assigned. <code>IE-S-nn</code> are read from source at a pinned tag, <code>IE-M-nn</code> are
 measured, <code>IE-I-nn</code> are inferred, <code>IE-A-nn</code> are adjudication entries,
-<code>IE-L-nn</code> are limitations.</p>
+<code>IE-L-nn</code> are limitations. A claim whose status chip carries a scope qualifier (a
+small n, a confound, non-release behavior, a degenerate case, an estimator caveat) wears the
+amber caveat badge; plain verified claims wear green.</p>
 
 <h3 id="ledger-source"><a class="anchor" href="#ledger-source">Source claims</a></h3>
 
@@ -424,7 +440,7 @@ measured, <code>IE-I-nn</code> are inferred, <code>IE-A-nn</code> are adjudicati
   reduction in the feature's history</strong>, roughly 33% fewer pixels. On a 320&times;240 panel
   the same rule gives 640&times;640, an 18.5% increase.</p>
   <dl>
-    <dt>Consequence</dt><dd>Everything measured here was measured at the historical floor for the 240&nbsp;px panel. Earlier releases put a <em>larger</em> final image into the same chain</dd>
+    <dt>Consequence</dt><dd>Everything measured here was measured at the historical floor for the 240&nbsp;px panel: no earlier release gave the chain less scene content. v0.4.3/v0.4.4 hashed a genuinely larger (unrotated 720&times;480) image; v0.4.5&ndash;v0.8.5's rotated buffer carries a 480&times;480 scene region, equal to today's, plus one third constant-black fill (see the v0.4.5 row in <a href="#history">section 7</a>)</dd>
     <dt>Caveat</dt><dd>A pixel count is not an entropy count. The claim is comparative only; no earlier release was measured directly. Reasoning in <a href="#history">section 7</a></dd>
   </dl>
 </div>
@@ -448,7 +464,7 @@ measured, <code>IE-I-nn</code> are inferred, <code>IE-A-nn</code> are adjudicati
   and release images are prepared and signed by one individual who is the sole holder of the signing
   keys.</p>
   <dl>
-    <dt>Source</dt><dd><a href="https://github.com/SeedSigner/seedsigner/blob/0.8.7/README.md?plain=1#L108">README.md L108</a> @ <code>0.8.7</code>; <a href="https://github.com/SeedSigner/seedsigner-os/blob/v0.8.7/docs/building.md">build procedure</a></dd>
+    <dt>Source</dt><dd><a href="https://github.com/SeedSigner/seedsigner/blob/0.8.7/README.md?plain=1#L106-L108">README.md L106&ndash;L108</a> @ <code>0.8.7</code> (sole-signer statement at L106, reproducibility at L108); <a href="https://github.com/SeedSigner/seedsigner-os/blob/v0.8.7/docs/building.md">build procedure</a></dd>
     <dt>Bears on</dt><dd>Step 2 of the trust chain in the analysis. Source review says nothing about the binary on a given microSD card</dd>
   </dl>
 </div>
@@ -463,6 +479,7 @@ measured, <code>IE-I-nn</code> are inferred, <code>IE-A-nn</code> are adjudicati
   <dl>
     <dt>Method</dt><dd>Quantization tables read from the JPEGs the device encoder emitted</dd>
     <dt>Significance</dt><dd>Reading the source was insufficient and would have been wrong. The capture settled it</dd>
+    <dt>Provenance</dt><dd>The device JPEGs this was read from belong to an early capture set not retained in this publication; the claim is not recomputable from the shipped data, though any instrumented device reproduces it directly</dd>
   </dl>
 </div>
 
@@ -476,6 +493,7 @@ measured, <code>IE-I-nn</code> are inferred, <code>IE-A-nn</code> are adjudicati
   against a 17.8% base rate.</p>
   <dl>
     <dt>Caveat</dt><dd>Any per-channel breakdown of changed bytes <strong>overstates independence</strong>: red and blue positions are largely determined by the green noise through upsampling. No figure here is arithmetically wrong as a result, because every estimate is computed on the hashed bytes whole rather than by summing channels</dd>
+    <dt>Provenance</dt><dd>The SOF0 sampling factors are verifiable from any device JPEG; the block co-occurrence percentages were measured on an early capture pair not retained here and are not recomputable from the shipped data</dd>
   </dl>
 </div>
 
@@ -493,7 +511,8 @@ measured, <code>IE-I-nn</code> are inferred, <code>IE-A-nn</code> are adjudicati
     <dt>Runs</dt><dd><code>data3/000025-934f</code>, <code>data3/000117-934f</code>, <code>data3/000202-934f</code>, <code>data4/000025-934f</code>, <code>data4/000117-934f</code>, <code>data4/000212-934f</code></dd>
     <dt>Condition</dt><dd>Face-down (lens toward the desk surface) on a shadowed desk. No seal, no enclosure, no intent</dd>
     <dt>Recompute</dt><dd><code>python3 analyze_preview.py data3/burst-19700101-000117-934f</code> (and siblings)</dd>
-    <dt>Weakest point</dt><dd>One unit exhibits the full collapse (the below-rail unit, <a href="#m-9">IE-M-09</a>); the railed units held 1&ndash;5 distinct frames. Which side of that line a given user's device sits on is a per-unit accident</dd>
+    <dt>Geometry note</dt><dd>Preview frames are square at the panel's larger dimension, so the 320&times;240 Plus panel yields 320&times;320 preview frames; both constants remain computable from the panel dimensions alone</dd>
+    <dt>Weakest point</dt><dd>One unit exhibits the full collapse (the below-rail unit, <a href="#m-9">IE-M-09</a>); the railed units held 2&ndash;5 distinct frames. Which side of that line a given user's device sits on is a per-unit accident</dd>
   </dl>
 </div>
 
@@ -506,6 +525,7 @@ measured, <code>IE-I-nn</code> are inferred, <code>IE-A-nn</code> are adjudicati
   in this work, dark and lit, cleared 256.</strong></p>
   <dl>
     <dt>Run</dt><dd><code>data4/000117-934f</code></dd>
+    <dt>Scope</dt><dd>"Measured chain" means every camera layer measured (data3&ndash;data5), or the final image alone already clearing 256 (data1). The data2 chains are indeterminate, not failures: finals as low as 173 with preview windows that predate the window instrumentation. No capture anywhere in this work was shown to fall short of 256</dd>
     <dt>Recompute</dt><dd><code>python3 analyze_mcv.py data4/burst-19700101-000117-934f/stock</code></dd>
     <dt>Weakest point</dt><dd>MCV over-estimates the floor on non-IID data (<a href="#l-1">IE-L-01</a>), so the true margin of that run is below 1.52&times; by an unquantified amount. The 12-word threshold (128) is cleared at 3.0&times;</dd>
   </dl>
@@ -535,13 +555,14 @@ measured, <code>IE-I-nn</code> are inferred, <code>IE-A-nn</code> are adjudicati
   <dl>
     <dt>Mechanism</dt><dd><a href="#s-6">IE-S-06</a>, <a href="#s-7">IE-S-07</a>. Full treatment in <a href="#oneLayer">section 8</a></dd>
     <dt>Consequence</dt><dd>The second demonstrated route to a one-layer chain, independent of lighting</dd>
+    <dt>Provenance</dt><dd>The ten zero-preview captures belong to an early instrumented set not retained here, so the count is not recomputable from the shipped data; the deterministic mechanism is verifiable from source (<a href="#s-6">IE-S-06</a>, <a href="#s-7">IE-S-07</a>)</dd>
   </dl>
 </div>
 
 <div class="claim">
   <div class="claimhead"><a class="cid" id="m-7" href="#m-7">IE-M-07</a><span class="st st-verified">Verified &middot; measured &middot; refutes a prediction</span></div>
   <p class="body"><strong>The window fills at the display loop's rate, not the camera's:</strong>
-  11.1&ndash;11.4 fps on the Pi Zero, 13.9&ndash;14.1 on the 2 W, 8.5&ndash;9.1 on the Plus
+  11.1&ndash;11.6 fps on the Pi Zero, 13.9&ndash;14.1 on the 2 W, 8.5&ndash;9.1 on the Plus
   geometry, all far under the camera's configured 24 fps. Filling 50 slots takes ~3.5&ndash;5.9 s;
   camera warm-up is ~0.2 s. On the Plus the window routinely arrives under-filled (42 and 44 of 50
   observed): short windows are the norm on the larger panel, not an operator artifact.</p>
@@ -559,11 +580,12 @@ measured, <code>IE-I-nn</code> are inferred, <code>IE-A-nn</code> are adjudicati
   cached repeats) against the quad-core 2 W's 50 of 50. Byte-identical <em>live</em> frames in
   separate slots are cached buffers, not repeated exposures: distinct live frames differ in
   hundreds of bytes, so two independent reads reproducing all 230,400 exactly does not happen in
-  practice. Observed lit (<code>data3/000630-6b66</code>), dark (<code>data4/000523-6b66</code>,
-  one live digest in two slots) and on the white wall (<code>data5/000053-6b66</code>,
+  practice. Observed lit (<code>data3/000630-6b66</code>), dark (<code>data4/000523-6b66</code>
+  and <code>data3/000150-6b66</code>, one live digest in two slots each) and on the white wall
+  (<code>data5/000053-6b66</code>,
   adjacent-slot doubles).</p>
   <dl>
-    <dt>Corroboration</dt><dd>Inter-frame gap jitter 39&nbsp;ms on the Zero against 4&nbsp;ms on the 2 W</dd>
+    <dt>Corroboration</dt><dd>The Zero's within-window append-gap spread is roughly an order of magnitude wider than the 2 W's (tens of milliseconds against single digits)</dd>
     <dt>Accounting</dt><dd>A cached duplicate contributes zero, same as a constant</dd>
   </dl>
 </div>
@@ -574,8 +596,9 @@ measured, <code>IE-I-nn</code> are inferred, <code>IE-A-nn</code> are adjudicati
   inspects.</strong> In identical darkness, auto-exposure settled at digital gain 3.625 (the rail)
   on three units and 3.25 on the 2 W, stably in every recorded dark session per unit. Every railed
   unit produced live frames in every dark window; the below-rail unit produced only the constant,
-  every time. The correlation is unanimous across all recorded dark sessions on four units, two
-  rounds and multiple boots.</p>
+  every time. The correlation is unanimous across all recorded dark sessions on four units, three
+  rounds and multiple boots: the engineered-seal round's logs corroborate it (its 2 W run locked
+  3.25 before the AE lock; every other unit's dark runs locked 3.625).</p>
   <dl>
     <dt>Weakest point</dt><dd>A correlation over four physical units, confounded with board family, sensor unit and enclosure. Mechanism is inferred (<a href="#i-5">IE-I-05</a>), not isolated</dd>
     <dt>Consequence</dt><dd>Which layer is thin in the dark is a stable per-unit accident, not a design property</dd>
@@ -588,7 +611,9 @@ measured, <code>IE-I-nn</code> are inferred, <code>IE-A-nn</code> are adjudicati
   per-read novelty is hundreds to a few thousand bits.</strong> Typical live frame
   (<code>data3/000150-6b66</code> frame18): 57,254 nonzero bytes, every one green (57,233 ones),
   99.4% of pixels, 346 held back at zero. Adjacent live frames differ in 820&ndash;1,004 bytes
-  (0.36&ndash;0.44%); worst within-run live-live MCV across the rounds: 469&ndash;4,034 bits.
+  (0.36&ndash;0.44%); worst within-run live-live MCV: 469&ndash;1,428 bits across the properly
+  dark 240&nbsp;px windows, 4,618 on the properly dark Plus window (4,034 occurs only in a
+  light-flagged run).
   Live-vs-constant MCV (~92,000&ndash;94,000) is dominated by the global threshold crossing and
   <strong>must not be used as the layer's contribution</strong>. The volatile minority is genuinely
   fresh per read: across a run's live frames, the union of held-back pixel positions is 1,728 and
@@ -609,6 +634,7 @@ measured, <code>IE-I-nn</code> are inferred, <code>IE-A-nn</code> are adjudicati
   to the margins, and non-zero: both layers watch the same scene through the same gain, which is
   the structural reason they thin together.</p>
   <dl>
+    <dt>Procedure</dt><dd>Downsample the final still 2&times;2 to preview geometry; compare its mean value over preview-crossed versus preview-held-back pixel positions; one z-score per live frame</dd>
     <dt>Consequence</dt><dd>Summing layer credits assumes an independence that is imperfect. The totals in <a href="#results">section 5</a> lean optimistic for this reason among others</dd>
   </dl>
 </div>
@@ -617,7 +643,8 @@ measured, <code>IE-I-nn</code> are inferred, <code>IE-A-nn</code> are adjudicati
   <div class="claimhead"><a class="cid" id="m-12" href="#m-12">IE-M-12</a><span class="st st-verified">Verified &middot; measured</span></div>
   <p class="body"><strong>Lit scenes deliver what the design assumes.</strong> Lit preview windows:
   46 of 50 distinct on the single-core Zero, 50 of 50 on the 2 W. Lit final images on all four
-  units: 1.5&ndash;3.1 million bits (worst of 45 pairs, MCV), three to four orders of magnitude
+  units: 1.3&ndash;3.1 million bits across the eight lit runs (worst of 45 pairs, MCV; the
+  low end is the 2 W lit control at 1,332,455), three to four orders of magnitude
   above requirement, at both still geometries.</p>
   <dl>
     <dt>Runs</dt><dd>Baselines: the four <a href="data1/RUNS.md">data1</a> bookshelf runs. Lit preview controls: <code>data3/000630-6b66</code>, <code>data3/000322-934f</code></dd>
@@ -626,7 +653,7 @@ measured, <code>IE-I-nn</code> are inferred, <code>IE-A-nn</code> are adjudicati
 </div>
 
 <div class="claim">
-  <div class="claimhead"><a class="cid" id="m-13" href="#m-13">IE-M-13</a><span class="st st-verified">Verified &middot; measured &middot; n=2</span></div>
+  <div class="claimhead"><a class="cid" id="m-13" href="#m-13">IE-M-13</a><span class="st st-caveat">Verified &middot; measured &middot; n=2</span></div>
   <p class="body"><strong>A featureless scene is not a degenerate scene.</strong> Two blank-white-wall
   runs (one handheld, one stationary, natural light only, single-core Zero): finals 1,397,876 and
   1,490,163 bits, within 10% of the same unit's bookshelf baseline (1,505,982). The stationary run
@@ -665,10 +692,11 @@ measured, <code>IE-I-nn</code> are inferred, <code>IE-A-nn</code> are adjudicati
   <code>bf2a2858</code> at OS tag <code>v0.8.7</code>; results byte-identical under 11.1.0):
   frames displaying a faint image occur in runs measuring as low as <strong>113 bits</strong>
   (2 of 10 finals in <code>data3/000150-6b66</code>; 1&ndash;3 of 10 in four of the five sub-256
-  runs), frames displaying pure black occur in runs measuring up to <strong>1,958</strong>
-  (including 2 of 10 in the 173-bit run), and the display class flickers between consecutive
-  finals of one unchanged setup. No user-facing check based on the review screen can bound entropy
-  in either direction. Display-only: the hash uses the unboosted original.</p>
+  runs), frames displaying pure black occur in runs measuring as high as <strong>36,462</strong>
+  (4 of 10 finals in <code>data2/000427</code>; 8 of 10 in the 173-bit run), and the display
+  class flickers between consecutive finals of one unchanged setup. Both display classes occur
+  across essentially the full measured range, so no user-facing check based on the review screen
+  can bound entropy in either direction. Display-only: the hash uses the unboosted original.</p>
   <dl>
     <dt>Recompute</dt><dd><code>python3 analyze_review_screen.py</code> (per-frame table for every retained run; state the Pillow version when comparing)</dd>
     <dt>Amendment</dt><dd>The run-level black/stretched classification an earlier data2 table carried is superseded: the class is per-frame, not per-run. <a href="data2/RUNS.md">data2/RUNS.md</a> carries the amendment</dd>
@@ -679,11 +707,15 @@ measured, <code>IE-I-nn</code> are inferred, <code>IE-A-nn</code> are adjudicati
 <div class="claim">
   <div class="claimhead"><a class="cid" id="m-16" href="#m-16">IE-M-16</a><span class="st st-verified">Verified &middot; measured</span></div>
   <p class="body"><strong>No final image ever repeated.</strong> 320 final frames across the 32
-  retained runs, lit and dark, every frame distinct within its series
-  (<a href="analyze_mcv.py">analyze_mcv.py</a> refuses any final-image series containing
-  duplicates, so every reported series passed that gate). The uniqueness claim is scoped to the
-  final image: preview slots do repeat, and that is the subject of
+  retained runs, lit and dark, all mutually distinct <em>corpus-wide</em>: a global SHA-256 over
+  every retained final returns 320 distinct digests, with no duplicate within or across series.
+  (<a href="analyze_mcv.py">analyze_mcv.py</a> additionally refuses any final-image series
+  containing duplicates, so every reported series passed that gate.) The uniqueness claim is
+  scoped to the final image: preview slots do repeat, and that is the subject of
   <a href="#m-3">IE-M-03</a>/<a href="#m-8">IE-M-08</a>.</p>
+  <dl>
+    <dt>Recompute</dt><dd><code>python3 -c "import hashlib,glob; h=[hashlib.sha256(open(f,'rb').read()).hexdigest() for f in glob.glob('data[1-9]/burst-*/stock/frame*.raw')]; print(len(h), len(set(h)))"</code></dd>
+  </dl>
   <dl>
     <dt>Bears on</dt><dd>The "same photograph twice" question, and it rules out temporal denoising (<a href="#i-1">IE-I-01</a>)</dd>
   </dl>
@@ -692,7 +724,8 @@ measured, <code>IE-I-nn</code> are inferred, <code>IE-A-nn</code> are adjudicati
 <div class="claim">
   <div class="claimhead"><a class="cid" id="m-17" href="#m-17">IE-M-17</a><span class="st st-verified">Verified &middot; measured</span></div>
   <p class="body"><strong>Dark-capture quality is bimodal, and light contamination inflates the
-  answer.</strong> Occlusion quality split 14 runs into two groups separated by 10&ndash;20&times;
+  answer.</strong> Occlusion quality split the sixteen occlusion-round runs (nine retained, seven
+  deleted but summarized) into two groups separated by 10&ndash;20&times;
   on the share of first-frame pixels at or above value 4 (properly dark: 0.001&ndash;0.007%; light
   present: 0.048&ndash;0.166%), with AE gain and edge gradients as corroborating tells. Stray
   light is signal, signal carries shot noise, and shot noise is what the estimator measures, so
@@ -723,7 +756,7 @@ measured, <code>IE-I-nn</code> are inferred, <code>IE-A-nn</code> are adjudicati
   <p class="body"><strong>No temporal denoising is active on the final-image path.</strong>
   Averaging across frames is the one mechanism that could make consecutive captures resemble each
   other, and the data rules it out: no two final frames identical in 320, with per-pair differences
-  covering 77&ndash;85% of values in lit series.</p>
+  covering 74&ndash;98% of values across the lit series' pairs.</p>
   <dl>
     <dt>Flips if</dt><dd>The camera tuning changes. A move to different camera hardware or a stack enabling temporal denoise or frame stacking invalidates it</dd>
   </dl>
@@ -819,10 +852,19 @@ barrier the lens sees) and is recorded per unit in <a href="data2/RUNS.md">data2
     <tr><td class="num">934f&hellip;</td><td>Pi Zero 2 W Rev 1.0</td><td class="num">240&times;240 / 480&times;480</td><td>3D-printed case</td></tr>
     <tr><td class="num">6b66&hellip;</td><td>Pi Zero Rev 1.3</td><td class="num">240&times;240 / 480&times;480</td><td>Milled aluminum case, tightest camera-aperture fit</td></tr>
     <tr><td class="num">074c&hellip;</td><td>Pi Zero W Rev 1.1</td><td class="num">240&times;240 / 480&times;480</td><td>None (bare board)</td></tr>
-    <tr><td class="num">a92a&hellip;</td><td>Pi Zero W Rev 1.1 + Plus display</td><td class="num">320&times;320 / 640&times;640</td><td>Large 3D-printed Plus-style case</td></tr>
+    <tr><td class="num">a92a&hellip;</td><td>Pi Zero W Rev 1.1 + Plus display</td><td class="num">320&times;240 / 640&times;640</td><td>Large 3D-printed Plus-style case</td></tr>
   </tbody>
 </table>
 </div>
+
+<figure>
+  <div class="plate"><div class="lbl">The four units, camera side</div><img src="figures/rig_03_four_units_camera_side.jpg" style="image-rendering:auto" alt="Four SeedSigner units camera-side up: an orange 3D-printed case, a milled aluminum case, a bare Pi Zero board with its camera ribbon taped on, and a large oval Plus-style case."></div>
+  <figcaption>The fleet, camera side up: upper left the 2 W in its orange 3D-printed case
+  (<code>934f</code>), upper right the milled aluminum case with the tightest aperture fit
+  (<code>6b66</code>), center the bare board with its camera ribbon taped to the back
+  (<code>074c</code>), bottom the oval Plus-style case (<code>a92a</code>). Operator photograph,
+  resized only.</figcaption>
+</figure>
 
 <div class="tablewrap">
 <table>
@@ -962,7 +1004,8 @@ stray light and are not dark measurements.</p>
 
 <ul>
   <li><strong>The dominant slot content in every dark window is the computable constant</strong>
-  (<a href="#m-3">IE-M-03</a>): 45&ndash;50 of 50 slots on the 240&nbsp;px units, with the repeats
+  (<a href="#m-3">IE-M-03</a>): 46&ndash;50 of 50 slots on the 240&nbsp;px units held the constant
+  or a cached repeat, with the repeats
   in long unbroken stretches (47 of 49 consecutive pairs identical in one run), which is the
   signature of quantization, not of oversampling.</li>
   <li><strong>Four final images sit below 256</strong> (113, 177, 190, 221), every one in a window
@@ -996,7 +1039,7 @@ frames) and marked; every data4 credit is a within-run measurement.</p>
     <tr><td class="num">data4/000523-6b66</td><td class="num">3 &times; 1,428</td><td class="num">432</td><td class="num">4,716</td><td class="num">yes, 18&times;</td></tr>
     <tr><td class="num">data3/000031-6b66</td><td class="num">1 &times; 1,651 (cross-run est.)</td><td class="num">26,318</td><td class="num">~27,969</td><td class="num">yes, 109&times; (light)</td></tr>
     <tr><td class="num">data4/000123-6b66</td><td class="num">2 &times; 4,034</td><td class="num">24,754</td><td class="num">32,822</td><td class="num">yes, 128&times; (light)</td></tr>
-    <tr><td class="num">data4/000450-a92a</td><td class="num">4 &times; 4,618</td><td class="num">27,576</td><td class="num">46,048</td><td class="num">yes, 180&times;</td></tr>
+    <tr><td class="num">data4/000450-a92a</td><td class="num">4 &times; 4,618</td><td class="num">27,576</td><td class="num">46,048</td><td class="num">yes, 179&times;</td></tr>
     <tr><td class="num">data4/000038-a92a</td><td class="num">3 &times; 982</td><td class="num">248,977</td><td class="num">251,923</td><td class="num">yes, 984&times; (light)</td></tr>
   </tbody>
 </table>
@@ -1047,7 +1090,24 @@ and it sat in a window holding four live frames; every dark <em>total</em> clear
 <p>Nine retained runs across all four units, lens occluded by escalating methods, selection by the
 on-device review screen (repeat until it displayed pure black). Full tables, including the
 two-population split, the deleted light-present runs' statistics and the occlusion caveats, are in
-<a href="data2/RUNS.md">data2/RUNS.md</a>. What this round established, in order of importance:</p>
+<a href="data2/RUNS.md">data2/RUNS.md</a>.</p>
+
+<figure class="wide">
+  <div class="plates">
+    <div class="plate"><div class="lbl">Camera-down on the first gel pack</div><img src="figures/rig_01_device_on_gel_pack.jpg" style="image-rendering:auto" alt="A SeedSigner in an orange case resting camera-down on a blue gel pack in its fabric sleeve on a refrigerator shelf, screen lit, USB cable running off-frame."></div>
+    <div class="plate"><div class="lbl">Second pack over it, seal complete</div><img src="figures/rig_02_second_pack_over_device.jpg" style="image-rendering:auto" alt="A second bare gel pack laid over the device, completing the sandwich; only the USB cable emerges."></div>
+  </div>
+  <figcaption>The best seal of the engineered round, photographed in place: the device camera-down
+  on a gel pack inside its fabric sleeve on a refrigerator shelf, then a second bare pack laid
+  over it, with the battery pack inside so the door gasket closes unbroken. Both packs were at
+  room temperature: sealing material, not coolant. The lit screen in the first photograph is the
+  boot splash; during a capture it shows the live preview, which in a sealed dark enclosure is
+  itself black. Operator photographs, resized only. This is the apparatus that produced 173 bits,
+  and that an unsealed desk in shadow later undercut at 113: kept here as a record of the lengths
+  gone to before learning the engineering was not the point.</figcaption>
+</figure>
+
+<p>What this round established, in order of importance:</p>
 
 <ul>
   <li><strong>The best-sealed run measured 173 bits, below 256</strong> (gel-pack seal at the lens
@@ -1061,8 +1121,9 @@ two-population split, the deleted light-present runs' statistics and the occlusi
   (384 to 2,527), which is why single careful runs cannot bound anything
   (<a href="#l-4">IE-L-04</a>).</li>
   <li><strong>The review-screen simulation</strong> over these runs is the basis of
-  <a href="#m-15">IE-M-15</a>: pure-black displays spanned 173&ndash;1,958 bits, and the
-  stretched-image run measured lower than the pure-black one.</li>
+  <a href="#m-15">IE-M-15</a>: within this round, finals displaying pure black occur in runs
+  from 173 to 36,462 bits, and the display class flickers between consecutive finals of one
+  unchanged setup.</li>
   <li>The Plus unit sits two orders of magnitude higher in every dark table because its residual
   internal light cannot be excluded: its apparent advantage is a light leak, which is
   <a href="#m-17">IE-M-17</a> in miniature.</li>
@@ -1074,7 +1135,9 @@ two-population split, the deleted light-present runs' statistics and the occlusi
 Four sub-256 finals and six zero-contribution windows exist in provenance-recorded data, from
 conditions requiring no intent. <strong>"What do users typically get?" is a distribution question,
 and it is not answerable from this data</strong>: one desk position spanned 113 to 26,318 bits
-with nothing moved, and any realistic condition measures one room, one surface, one lamp angle.
+with nothing moved (the high end light-present-flagged, so the swing is imperceptible leak
+variation, itself part of the answer), and any realistic condition measures one room, one
+surface, one lamp angle.
 Measured points are reported as points; the distribution was not characterized, and this document
 declines to extrapolate from either tail (<a href="#l-4">IE-L-04</a>).</p>
 
@@ -1122,7 +1185,7 @@ PR #46. Every release since has been examined. Full working:
   <tbody>
     <tr><td class="num">v0.4.3<br>2021-07-31</td><td>Feature introduced. A single SHA-256 of one 720&times;480 image. No preview frames, no CPU serial, no clock. 24-word only</td></tr>
     <tr><td class="num">v0.4.4<br>2021-08-27</td><td>PR #76, the modern four-input chain arrives. <strong>The same four inputs, in the same order, in every release through v0.8.7</strong> (<a href="#s-5">IE-S-05</a>)</td></tr>
-    <tr><td class="num">v0.4.5</td><td>Capture rotation moved into <code>Camera.capture_frame()</code> and became a user setting (default 0), so from here the hashed image is the rotated one. A rotation permutes pixels rather than adding or removing any</td></tr>
+    <tr><td class="num">v0.4.5</td><td>Capture rotation moved into <code>Camera.capture_frame()</code> and became a user setting (default 0), so from here the hashed image is the rotated one. On the era's non-square 720&times;480 final, PIL's <code>rotate(90)</code> keeps the canvas: the hashed buffer becomes a 480&times;480 scene region plus one third constant-black fill (verified empirically: 115,200 of 345,600 pixels), and a third of the scene columns are cropped away. The constant fill contributes nothing under the accounting rules; for square frames (previews, and finals from v0.8.6) a rotation is a pure pixel permutation</td></tr>
     <tr><td class="num">v0.5.0<br>2022-04-22</td><td>MVC port; 12-word option added, first 128 digest bits. Chain unchanged</td></tr>
     <tr><td class="num">v0.7.0<br>2023-09-04</td><td>Preview loop restructured (PR #453); frame window changed from first-50 to last-50. Introduces the held-button path (<a href="#s-7">IE-S-07</a>)</td></tr>
     <tr><td class="num">v0.8.0</td><td>Preview frames become RGBA, adding a constant alpha byte. No entropy effect</td></tr>
@@ -1143,10 +1206,12 @@ PR #46. Every release since has been examined. Full working:
   version, and the flow has no camera-error fallback: every camera-failure surface identified in
   code review or observed on hardware (an error, an absent frame, and in one on-device ribbon
   test an outright app freeze) stops the flow before a seed exists.</p>
-  <p><strong>The measured configuration is the smallest the final image has ever been on the
-  240&nbsp;px panel</strong> (<a href="#s-8">IE-S-08</a>): every release from v0.4.3 through v0.8.5
-  captured 720&times;480, v0.8.6 reduced it to 480&times;480, and everything here was measured at
-  that historical floor.</p>
+  <p><strong>No release ever gave the chain less scene content than the configuration measured
+  here</strong> (<a href="#s-8">IE-S-08</a>): every release from v0.4.3 through v0.8.5 captured
+  720&times;480, but from v0.4.5 the default rotation reduced the hashed buffer's scene content to
+  a 480&times;480 region plus constant fill (v0.4.5 row above), and v0.8.6 made the capture itself
+  480&times;480. Everything here was measured at that historical floor, which v0.4.5&ndash;v0.8.5
+  effectively shared.</p>
   <p class="weak"><strong>What that argument is not.</strong> A pixel count is not an entropy count,
   and more pixels of a dark frame are still mostly zeros. The claim is only comparative: no release
   gave the chain <em>less</em> to work with than the configuration measured here. <strong>No earlier
@@ -1171,7 +1236,7 @@ routes reduce it to one meaningful input, and they compound with each other.</p>
 <h3 id="route-dark"><a class="anchor" href="#route-dark">Route 1: a blocked lens (probabilistic, per-unit)</a></h3>
 
 <p>Measured in section 5: the window collapses to the computable constant, entirely on the
-below-rail unit (six of six), nearly on the railed units (1&ndash;5 distinct of 50). The seed
+below-rail unit (six of six), nearly on the railed units (2&ndash;5 distinct of 50). The seed
 rests on the final image, which the same light starvation has thinned; the thinnest measured
 result is the 389-bit / 1.52&times; chain (<a href="#m-4">IE-M-04</a>). Reaching it took setting
 the device down lens-down on a desk in shadow.</p>
@@ -1181,10 +1246,10 @@ the device down lens-down on a desk in shadow.</p>
 <p><strong>VERIFIED (<a href="#m-6">IE-M-06</a>).</strong> Each preview-loop iteration reads a
 frame, paints it, checks the buttons, and only then appends:</p>
 
-<pre><code>frame = self.camera.read_video_stream(as_image=True)
+<pre><code>frame: Image = self.camera.read_video_stream(as_image=True)
 ...
 self.renderer.canvas.paste(frame.crop(box=box))   # displayed
-if self.hw_inputs.check_for_low(keys=KEYS__ANYCLICK):
+if self.hw_inputs.check_for_low(keys=HardwareButtonsConstants.KEYS__ANYCLICK):
     ...
     return preview_images                          # returns here
 ...
@@ -1238,7 +1303,9 @@ does not hold:</strong> differencing frames from two physically different sensor
 against 173 for one of those units against itself, the same order rather than a leap. At these
 light levels there is no signal for PRNU to modulate. Within-burst (173), across sessions on one
 device (167) and across devices (266) are separate conditions, not a ranking; reading structure
-into their ordering over-interprets order statistics.</p>
+into their ordering over-interprets order statistics. (The cross-condition pairings were drawn
+from the engineered-seal round's frames but not recorded, so treat 167 and 266 as
+order-of-magnitude illustrations rather than recomputable figures.)</p>
 
 <h3 id="fingercover"><a class="anchor" href="#fingercover">A finger over the lens</a></h3>
 
@@ -1289,7 +1356,7 @@ also looks exactly like a dead camera, and will be reported as one.</p>
   of v0.8.7 and deliberate: verification is performed by the user. The measurements now bound what
   that human check can and cannot do. It is real against a dead, disconnected or covered camera in
   a lit setting (a black or frozen preview is conspicuous). <strong>It cannot grade entropy</strong>
-  (<a href="#m-15">IE-M-15</a>: not monotone, 11&times; spread among identical-looking captures),
+  (<a href="#m-15">IE-M-15</a>: both display classes occur across runs from 113 to 36,462 bits),
   and it cannot detect a collapsed preview window, because the frames are displayed whether or not
   they are chained (<a href="#m-6">IE-M-06</a>).</p>
   <dl><dt>Weakest point</dt><dd>A hardware fault returning a solid buffer would still flow through to a valid-looking seed; not reachable by occluding the lens, needs a fault. The distinct-digest check in <a href="#oneLayer">section 8</a> is the code-side complement this analysis recommends</dd></dl>
@@ -1346,7 +1413,7 @@ also looks exactly like a dead camera, and will be reported as one.</p>
   <div class="claimhead"><a class="cid" id="a-9" href="#a-9">IE-A-09</a><span class="st st-verified">Rejected</span></div>
   <p class="body"><strong>Statistical randomness tests should be run.</strong> Rejected. Output-side
   testing after SHA-256 is guaranteed uninformative (<a href="#norandomness">section 4</a>).</p>
-  <dl><dt>Weakest point</dt><dd>Note the symmetry with <a href="#a-10">IE-A-10</a>: every estimator used here has its own blindness, stated alongside its figures</dd></dl>
+  <dl><dt>Weakest point</dt><dd>Rejecting output-side tests leaves input-side estimation as the only check, and <a href="#a-10">IE-A-10</a> concedes that pipeline's own limits. The rejection also removes the only test a non-expert could run unaided</dd></dl>
 </div>
 
 <div class="claim">
@@ -1412,7 +1479,7 @@ also looks exactly like a dead camera, and will be reported as one.</p>
   setup error produces reassuring wrong answers, not alarming ones (<a href="#m-17">IE-M-17</a>).
   Every retained dark run passes the pixel-band discriminator; light-present runs are flagged in
   every table; the deleted light-present runs' statistics are preserved in the data2 manifest.</p>
-  <dl><dt>Weakest point</dt><dd>The discriminator was derived from this work's own 14 runs, not from an external standard. Its two populations are cleanly separated here, but the threshold has not been validated on other hardware</dd></dl>
+  <dl><dt>Weakest point</dt><dd>The discriminator was derived from this work's own sixteen occlusion runs, not from an external standard. Its two populations are cleanly separated here, but the threshold has not been validated on other hardware</dd></dl>
 </div>
 
 <h2 id="traps"><a class="anchor" href="#traps"><span class="num">11</span>Traps: claims that look right and are not</a></h2>
@@ -1427,7 +1494,7 @@ of them caught this analysis during drafting.</p>
   <tbody>
     <tr>
       <td>The preview layer's contribution is live-vs-constant MCV (~92&ndash;94k bits per frame)</td>
-      <td>That figure is dominated by the global quantization-threshold crossing, which every frame shares. Per-read novelty, live against live, is 469&ndash;4,034 bits</td>
+      <td>That figure is dominated by the global quantization-threshold crossing, which every frame shares. Per-read novelty, live against live, is hundreds to a few thousand bits (469&ndash;1,428 in the properly dark 240&nbsp;px windows)</td>
       <td class="num"><a href="#m-10">IE-M-10</a></td>
     </tr>
     <tr>
@@ -1442,7 +1509,7 @@ of them caught this analysis during drafting.</p>
     </tr>
     <tr>
       <td>The review screen showing an image means the capture was safe (or black means it was not)</td>
-      <td>The review screen is a light test that fails both ways: a faint image appeared on 2 of 10 finals in the 113-bit run, identical-looking blacks spanned 11&times;, and the display flickers within one unchanged setup</td>
+      <td>The review screen is a light test that fails both ways: a faint image appeared on 2 of 10 finals in the 113-bit run, pure black appeared on finals of runs measuring up to 36,462 bits, and the display flickers within one unchanged setup</td>
       <td class="num"><a href="#m-15">IE-M-15</a></td>
     </tr>
     <tr>
@@ -1539,7 +1606,10 @@ are recorded separately</strong>, in <a href="#provenance">section 15</a>.</p>
   <li id="l-8"><strong>IE-L-08 &middot; Scene and occlusion descriptions are
   operator-supplied.</strong> The instrumentation records pixel statistics, exposure and gain;
   what was in front of the lens and how it was occluded is recorded by the operator in the
-  manifests and cannot be checked against the data beyond the pixel-band discriminator.</li>
+  manifests and cannot be checked against the data beyond the pixel-band discriminator. The
+  data2 seal arrangement and each unit's enclosure are now photo-documented
+  (<a href="#population">&sect;3</a>, <a href="#results-data2">&sect;5</a>), which narrows this
+  for that round but does not close it.</li>
   <li id="l-9"><strong>IE-L-09 &middot; The loop-rate and stall findings are specific to v0.8.7's
   Python preview loop.</strong> A different camera stack or preview implementation changes them.
   The content findings (dark quantization collapse, green-plane anatomy) are sensor and pipeline
@@ -1737,11 +1807,31 @@ and the subsequent rebuild are recorded in the repository's knowledge documents 
 the analyzers (the confidence bound, worst-of-all-pairs selection, the duplicate-guard split, the
 digest-coverage dumping rule).</p>
 
-<p><strong>The rebuilt population (data1&ndash;data5) and the two rebuilt documents have not yet
-been through an equivalent independent hostile-reader pass.</strong> Stating that plainly rather
-than borrowing the earlier review's credit: the source-claim ledger and release history carry over
-from the reviewed draft; the measurement claims, tables and totals are new to this rebuild and
-have been verified by recomputation from the shipped frames, by this work's own toolchain.</p>
+<p><strong>The rebuilt documents and population went through an independent adversarial pass on
+2026-08-07</strong>: three fresh-context Claude Fable 5 reviewers with no involvement in the
+drafting, one recomputing every figure from the shipped frames with its own tooling (not only
+the shipped analyzers), one attacking claims, logic and convention compliance, one verifying
+every source claim against the pinned tags. Every finding was re-verified by recomputation
+before any change was made. Confirmed clean: all 32 runs' figures, all 15 chain totals, both
+computable constants, every caption statistic, every cited source line and commit/PR
+attribution, and the release-history code claims. What the pass changed, applied the same day:
+the v0.4.5 rotation claim (PIL <code>rotate(90)</code> on the era's non-square final crops a
+third of the scene and injects constant fill, so "rotation permutes pixels" was wrong for
+v0.4.5&ndash;v0.8.5, and "earlier releases were larger" became "no release gave the chain less
+scene content"); the verdict's scope (restricted to chains that were fully measured, because the
+engineered-seal round's chains are indeterminate); the review-screen spans restated per-frame
+(both display classes occur across runs from 113 to 36,462 bits); the AE-gain corroborant
+demoted to one-directional; a set of range and count corrections (lit floor 1.3M, live-live
+novelty 469&ndash;1,428 properly dark, loop rate to 11.6 fps, sixteen occlusion runs, one
+179&times; multiplier, 2&ndash;5 distinct frames on railed units, a 45-slot constant plus one
+cached live repeat in the 113-bit window); the sub-256 finals attributed to one board rather
+than two; and corpus-wide final-image uniqueness verified globally, upgrading
+<a href="#m-16">IE-M-16</a>. One finding was declined: retired figures quoted inside manifest
+supersession notes remain there deliberately, as supersession records. Claims with no
+deterministic reproduction path from the shipped data are now marked as such where they stand
+(<a href="#m-1">IE-M-01</a>, <a href="#m-2">IE-M-02</a>'s block statistics,
+<a href="#m-18">IE-M-18</a>, the cross-sensor pattern-noise figures, and
+<a href="#m-6">IE-M-06</a>, whose held-button captures were not retained).</p>
 
 <p><strong>Corrections after publication will be recorded here</strong>, with what changed and why.
 Nothing has been published and later revised at this point, so there is nothing to list. Errors
@@ -1760,7 +1850,18 @@ hashing. Differences are <code>|a &minus; b|</code> at fixed linear gains of &ti
 &times;40 with clipping. Detail crops are 96&times;96 at offset (150, 60), scaled 6&times;
 nearest-neighbor; the two blink crops also ship as unquantized stills
 (<code>14_lit_detail_frame00.png</code>, <code>15_lit_detail_frame01.png</code>) so the
-comparator can be checked frame by frame.</p>
+comparator can be checked frame by frame. The social-sharing card
+(<code>social_card.png</code>, 1200&times;630, the analysis page's <code>og:image</code>) is the
+as-shot frame 00 and the &times;40 difference side by side, both full frame (no crop), scaled to
+596&times;596 (LANCZOS for the photograph, nearest-neighbor for the difference) on a black
+1200&times;630 canvas; neither panel carries processing the published plates do not, beyond the
+JPEG encode (quality 88) that keeps the card under messenger size limits.</p>
+
+<p><strong>Rig photographs</strong> (<code>rig_01&hellip;</code>, <code>rig_02&hellip;</code>,
+<code>rig_03&hellip;</code>). Operator photographs of the data2 occlusion arrangement and the
+four units' camera-side enclosures, resized to 1400&nbsp;px long edge (JPEG, quality 85) and
+otherwise unedited. They are documentation of the apparatus, not measurement exhibits; the
+full-resolution originals are retained outside the repository.</p>
 
 <p><strong>Blank-wall plates</strong> (<code>make_figures_whitewall.py</code>).
 <code>data5/burst-19700101-000306-6b66</code> frames 03 and 06, the run's worst pair by MCV,
@@ -1786,8 +1887,8 @@ black communicates nothing its digest does not.</p>
 <p><strong>The blink comparators</strong> (<code>13_lit_detail_blink.png</code>,
 <code>whitewall_detail_blink.png</code>) are animated PNGs alternating two detail crops every
 500&nbsp;ms. <strong>APNG rather than GIF, deliberately:</strong> GIF's 256-color palette would
-quantize away more than half the change (97.8% of the lit crop's pixels differ; only 47.3%
-survived a shared 256-color palette in testing). APNG is lossless, so every pixel that appears to
+quantize away much of the change (in testing, a shared 256-color palette lost more than half the
+crop's differing pixels). APNG is lossless, so every pixel that appears to
 move is a pixel that moved. Each frame carries a caption strip added <em>below</em> the image,
 never over it, blue for capture 1 and orange for capture 2 (<code>#1B4B7A</code> /
 <code>#C1621E</code>, 46&nbsp;px): the standard colorblind-safe opposed pair, kept clear of the

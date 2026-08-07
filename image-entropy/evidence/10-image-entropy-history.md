@@ -216,3 +216,17 @@ Mitigating context (all releases): even with zero preview frames, the final 480�
 - **Memory hygiene**: since 0.4.4 the code nulls `seed_entropy_image` / `preview_images` / hashes after use (`# Image should never get saved nor stick around in memory`), but Python `None`-assignment does not scrub buffers. Buffer-scrubbing work exists only in unreleased LVGL-migration branches (`23de1fb5` "fix(entropy): scrub the camera buffers holding seed material") — not in any release through 0.8.7.
 - **Test coverage**: `e7dd69b0` (2023-03-03) added unit tests for `mnemonic_generation` byte→mnemonic conversion only; the image-entropy chain composition itself has never had release-tagged test coverage (VERIFIED: tests target `generate_mnemonic_from_bytes`, not the chain).
 - **Could not determine**: the actual min-entropy of a JPEG-decoded degenerate (lens-covered) frame per firmware version — settling it requires empirical capture on hardware per release image (only v0.8.7 was measured; see the analysis's data and methodology document).
+
+---
+
+## Amendment 2026-08-07 (adversarial review): the 720×480 column is capture geometry, not scene content
+
+From 0.4.5 through 0.8.5 the hashed final is the CAPTURED 720×480 buffer after
+`Image.open(stream).rotate(90 + rotation)` with default rotation 0. PIL `rotate(90)` without
+`expand` keeps the 720×480 canvas, so the hashed buffer is a 480×480 scene region plus one
+third constant-black fill (115,200 of 345,600 pixels; verified empirically), with a third of
+the scene columns cropped away — the era's own display crop `(120, 0, 600, 480)` frames
+exactly the live region. Consequences: (1) "rotation permutes pixels" is true only for square
+frames (previews; finals from 0.8.6); (2) only 0.4.3/0.4.4 hashed a genuinely larger scene
+area than today's 480×480 — from 0.4.5 the scene content equals the current configuration,
+plus a constant fill that contributes nothing to entropy.

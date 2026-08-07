@@ -48,7 +48,9 @@ neither is refrigeration:
 
 1. **A conformable seal directly at the lens.** The device was sandwiched between two
    **room-temperature** gel ice packs: one inside its fabric sleeve on the shelf, the device
-   resting camera-down on top of it, and a second bare pack laid over the device. A gel pack
+   resting camera-down on top of it, and a second bare pack laid over the device
+   (photographed in place: `../figures/rig_01_device_on_gel_pack.jpg`,
+   `../figures/rig_02_second_pack_over_device.jpg`). A gel pack
    deforms to the contour of the enclosure's face and closes the gap around the lens far better
    than a flat surface or cloth alone. The packs are sealing material, not coolant. **This is
    the part that matters, and it is the part to copy.**
@@ -91,7 +93,7 @@ carry temperature telemetry and none were held long enough to equilibrate.
 Testing it properly is not just a matter of using a freezer. **Cycling a camera through a large
 temperature change condenses moisture inside the lens assembly**, where it is difficult to
 remove and where it wrecks the measurement it was meant to inform: moisture between elements
-scatters light and alters the optical path, so the result characterises fog rather than sensor
+scatters light and alters the optical path, so the result characterizes fog rather than sensor
 noise. The risk is worst on the return to ambient.
 
 A safe protocol would seal the device with desiccant in an airtight container **before** the
@@ -143,8 +145,8 @@ stretched, 384 bits) sits in the same flicker band as runs the protocol accepted
 should not be quoted as a clean dark measurement.
 
 Second, and load-bearing for the analysis: **the display bounds the entropy in neither
-direction.** Finals that display pure black occur in runs spanning **173 to 1,958 bits, a
-factor of 11**, and finals that display a faint image occur in this round's 384-bit run -- and,
+direction.** Finals that display pure black occur in runs spanning **173 to 36,462 bits**
+within this round, and finals that display a faint image occur in this round's 384-bit run -- and,
 in the face-down series, in runs measuring as low as **113 bits** (`../data3/RUNS.md`,
 `000150-6b66`: 2 of 10). A pure-black review screen confirms light was excluded; a faintly
 visible one certifies nothing. An operator cannot tell 173 from 1,958 by looking, and can be
@@ -157,7 +159,7 @@ share of pixels at or above value 4 in the first frame, which differs by 10-20x 
 
 | Group | pixels >= 4 | p99.99 | AE digital gain |
 |---|---|---|---|
-| Properly dark | 0.001 - 0.007% | 2 - 3 | 3.625 (at ceiling) |
+| Properly dark | 0.001 - 0.007% | 2 - 3 | 3.625 (3.25 on the 2 W, its stable dark value -- see the gain knife-edge in `../data3/RUNS.md`) |
 | Light present | 0.048 - 0.166% | 5 - 7 | 1.102 |
 
 **Only the properly-dark group is retained.** The runs with light present are not failures of

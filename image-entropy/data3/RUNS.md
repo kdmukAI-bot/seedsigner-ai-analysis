@@ -66,6 +66,11 @@ any board, in any scene.
 
 ## Dark scenes: the window is dominated by a known constant
 
+Units note: `Constant-black` counts SLOTS; `Distinct` and `Live` count distinct digests.
+The two need not sum to the window: `000150`'s four live frames occupy five slots (one live
+digest cached into two adjacent slots, the same single-core re-return documented under the
+loop-rate section), and `000031`'s single live frame occupies two.
+
 | Run | Window | Distinct | Constant-black | Live | Final image MCV | vs 256 |
 |---|---|---|---|---|---|---|
 | `000031-6b66` | 50 | 2 | 48 | 1 | 26,318 | 102x (light present) |
@@ -80,7 +85,7 @@ The constant is byte-identical pure black (RGB all 0, alpha 255) with the SAME d
 touching a device: `sha256((0,0,0,255) x 57600)` reproduces it exactly from the panel
 size alone. Content an attacker already has contributes nothing: every repeated slot is
 zero bits. This is content collapse on the video-port path (240x240 RGBA, no JPEG stage):
-the pipeline quantizes the dim scene to zero. The repeats come in long unbroken stretches
+the pipeline quantizes the light-starved scene to zero. The repeats come in long unbroken stretches
 (47 of 49 consecutive pairs identical in `000031`), unlike the lit run's scattered
 stalls, so the dark collapse is quantization, not oversampling.
 
@@ -196,15 +201,16 @@ Caveats that cut against every total above:
 ## What this establishes, scoped
 
 The layered-chain argument assumed the preview layer supplies ~49 additional noise
-realizations when the final image is thin. Measured in the same captures, in the dim
+realizations when the final image is thin. Measured in the same captures, in the blocked-lens
 conditions where the final image IS thin:
 
 - **Count:** 1-5 distinct frames per 50-slot window -- including exactly zero live
   content, three times here and three more times in `data4`. Most slots hold a constant
   the attacker can compute from the panel size.
 - **Quality:** each distinct live frame carries genuine per-read variation (nothing in
-  the volatile minority repeats), worth ~469-4,034 MCV bits frame-to-frame across the
-  two rounds.
+  the volatile minority repeats), worth ~469-1,428 MCV bits frame-to-frame in the properly
+  dark 240px windows across the two rounds (4,618 on the properly dark Plus window; 4,034
+  occurs only in a light-flagged run).
 - **Net:** the chain held in every measured run, by margins as thin as 1.5-2.0x on an
   estimator that over-estimates, with the carrying layer decided by per-unit accidents.
 

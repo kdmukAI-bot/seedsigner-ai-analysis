@@ -4,8 +4,7 @@ __pycache__/
 .claude/
 .claude-auto-commit
 
-# Uncropped originals of the occlusion-rig photos. They frame the inside of a
-# domestic refrigerator with legible product labels, and this repo is served
-# verbatim. Crop to the device and sealing material before anything is published;
-# the cropped versions belong in image-entropy/figures/, not here.
+# Full-resolution originals of the occlusion-rig photos, ignored for size.
+# Resized copies are published in image-entropy/figures/ (rig_01..03); the user
+# approved full-frame publication 2026-08-07, so no cropping is required.
 image-entropy/capture-rig/photos-raw/

@@ -84,7 +84,8 @@ def blink(a, b, name):
 
     APNG rather than GIF, deliberately. GIF carries 256 colors and these crops hold far
     more, so a GIF would have to quantize; on this scene that hid more than half the change
-    (97.8% of the crop's pixels differ, only 47.3% survived a shared 256-color palette).
+    (97.5% of this crop's pixels differ; in testing, a shared 256-color palette lost more
+    than half of them).
     APNG is lossless, so every pixel that moved is a pixel the eye can see move, and the
     figure needs no caveat about the encoding. Browsers without APNG show frame one.
 
@@ -118,6 +119,19 @@ blink(zoom(f0), zoom(f1), "13_lit_detail_blink.png")
 save(zoom(f0), "14_lit_detail_frame00.png")
 save(zoom(f1), "15_lit_detail_frame01.png")
 save(zoom(np.clip(diff.astype(np.int32) * GAIN_LOW, 0, 255)), "16_lit_detail_difference.png")
+
+# Social-sharing card: a 1200x630 Open Graph image pairing the as-shot capture with its
+# x40 consecutive-capture difference, side by side on black -- the document's thesis in
+# one image. Both squares are full frame (no crop); 596x596 panels with an 8 px divider,
+# letter-boxed 17 px top and bottom.
+card_diff = np.clip(diff.astype(np.int32) * GAIN_HIGH, 0, 255).astype(np.uint8)
+left = Image.fromarray(f0).resize((596, 596), Image.Resampling.LANCZOS)
+right = Image.fromarray(card_diff).resize((596, 596), Image.Resampling.NEAREST)
+card = Image.new("RGB", (1200, 630), (0, 0, 0))
+card.paste(left, (0, 17))
+card.paste(right, (604, 17))
+card.save(OUT / "social_card.jpg", quality=88, optimize=True)
+print("wrote social_card.jpg (1200x630 og:image: as-shot | x40 diff, full frames)")
 
 # Series-wide figures quoted in index.html.
 F = np.stack([np.fromfile(p, np.uint8) for p in sorted(SRC.glob("*.raw"))])

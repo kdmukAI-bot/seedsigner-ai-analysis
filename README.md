@@ -2,7 +2,11 @@
 
 AI-assisted analyses of SeedSigner's critical subsystems, published for transparency.
 
-**Live:** *(GitHub Pages — enable Pages on `main` / root)*
+![A photograph of a bookshelf beside the difference between it and the next capture, amplified forty times: the photograph, and the sensor noise it conceals.](image-entropy/figures/social_card.jpg)
+
+**Live:** <https://kdmukai-bot.github.io/seedsigner-ai-analysis/> — deployed to GitHub Pages
+from `main` via `.github/workflows/pages.yml`. The documents are standalone HTML with no build
+step, so a local clone renders identically by opening `index.html` in a browser.
 
 These are **analyses, not audits.** No independent engagement, no certification. They are
 produced by SeedSigner's lead developer using AI tooling, and published because "trust us" is a
@@ -14,10 +18,15 @@ line or a measurement, and every document records what it could not verify.
 
 | Analysis | Subject | Reviewed | Status |
 |---|---|---|---|
-| [`image-entropy/`](image-entropy/) | Turning a photograph into a seed phrase | 0.8.7 | In review |
+| [`image-entropy/`](image-entropy/) | Turning a photograph into a seed phrase | 0.8.7 | Published |
 | `dice/` | Turning dice rolls into a seed phrase | 0.8.7 | Coming soon |
 
 Format and evidentiary rules: **[CONVENTIONS.md](CONVENTIONS.md)**.
+
+The image-entropy documents and data have been through an independent adversarial review pass
+(three fresh-context reviewers: figure recomputation, claims and logic, source verification at
+the pinned tags). The pass and everything it changed are recorded in the document's *Scope and
+provenance* section.
 
 ## Layout
 
@@ -30,6 +39,7 @@ CONVENTIONS.md   document structure, evidentiary rules, deployment reality
   figures/       plates, as files
   evidence/      supporting detail behind the published claims
   dataN/         raw measurement inputs by capture round, each with a RUNS.md manifest
+  capture-rig/   provenance-gated instrumented-build rig: build script, verifier, patch
   *.py           the scripts that produced the figures and numbers
 ```
 
@@ -40,15 +50,17 @@ measurements uses the scripts in each analysis directory.
 
 Everything below is the **shipping v0.8.7 path**: picamera/MMAL, the exact bytes v0.8.7 feeds
 into its SHA-256 chain, dumped before hashing by upstream-pinned instrumented builds. The
-retained population is `image-entropy/data1/` through `data5/` (32 runs, 4 devices), each
-directory carrying a `RUNS.md` manifest with its conditions, provenance and figures.
+retained population is `image-entropy/data1/` through `data5/` (32 runs, 4 devices, ~340 MB of
+raw frames), each directory carrying a `RUNS.md` manifest with its conditions, provenance and
+figures.
 
 ```bash
 cd image-entropy
 python3 analyze_mcv.py                 # final images: min-entropy, worst of all 45 pairs, every series
 python3 analyze_preview.py data3/burst-19700101-000150-6b66   # preview window structure, per run
 python3 analyze_review_screen.py       # what the review screen would have displayed, per frame
-python3 make_figures_lit.py            # regenerate the bookshelf plates
+python3 analyze_burst.py               # compressed-difference estimator (ceiling-side; no headline figure uses it)
+python3 make_figures_lit.py            # regenerate the bookshelf plates + social card
 python3 make_figures_whitewall.py      # regenerate the blank-wall plates
 python3 make_figures_dark150.py        # regenerate the dark plates (Pillow 11.0.0; see docstring)
 ```
