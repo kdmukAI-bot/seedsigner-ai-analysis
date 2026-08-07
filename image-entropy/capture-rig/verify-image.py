@@ -40,12 +40,21 @@ REQUIRED = [
     (b"unit_id", "unit identity"),
     (b"quiet_period_s", "quiet period"),
     (b"capture_s=%.3f", "per-frame timing"),
+    # No-seed kill-switch (added 2026-08-07, patched separately). Images built before it
+    # legitimately fail these two checks; that is the intended verdict -- rebuild rather
+    # than flash a capture image that can still turn its dumped bytes into a seed.
+    (b"NO-SEED KILL-SWITCH", "seed-creation kill-switch marker"),
+    (b"Seed creation disabled", "kill-switch user-facing notice"),
 ]
 
 # Must NOT be present. Superseded code whose presence means a stale overlay was baked in.
 FORBIDDEN = [
     (b"mean=%.4f", "superseded in-loop mean computation"),
     (b"sha256=%s", "superseded in-loop hashing"),
+    # Stock image-to-mnemonic derivation, deleted by the kill-switch patch. Either needle
+    # present means the build can still derive a seed from the bytes it wrote to the card.
+    (b"seed_entropy_image", "stock image-to-seed derivation"),
+    (b"mnemonic_generation.generate_mnemonic_from_bytes(", "stock mnemonic call site"),
 ]
 
 

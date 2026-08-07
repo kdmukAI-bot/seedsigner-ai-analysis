@@ -191,6 +191,14 @@ echo "==> applying instrumentation patch"
 git -C "$OV" apply --verbose "$HERE/0.8.7-burst-instrumentation.patch" 2>/dev/null \
   || patch -p0 -d "$OV" < "$HERE/0.8.7-burst-instrumentation.patch"
 
+# The kill-switch is a SEPARATE patch, applied on top, because the burst patch's SHA-256
+# is recorded in the provenance of already-captured data and must never change. It deletes
+# the image-to-mnemonic conversion (ToolsImageEntropyMnemonicLengthView's derivation body),
+# so a capture build cannot turn the image bytes it just wrote to the microSD into a seed.
+echo "==> applying no-seed kill-switch patch"
+git -C "$OV" apply --verbose "$HERE/0.8.7-no-seed-kill-switch.patch" 2>/dev/null \
+  || patch -p1 -d "$OV" < "$HERE/0.8.7-no-seed-kill-switch.patch"
+
 # --- 5. version.json, only if this OS revision demands it ---------------------------------
 # Some post-0.8.7 OS revisions added write_version_json(), which hard-exits unless either
 # tools/write_versionfile.py exists or version.json is already present -- and v0.8.7's app
@@ -217,6 +225,7 @@ fi
 {
   printf '%s\n' "${PROV[@]}"
   echo "patch: $(sha256sum "$HERE/0.8.7-burst-instrumentation.patch" | cut -d' ' -f1)"
+  echo "patch_noseed: $(sha256sum "$HERE/0.8.7-no-seed-kill-switch.patch" | cut -d' ' -f1)"
   echo "image_mb: ${IMAGE_MB}"
 } > "$OV/src/seedsigner/BUILD-PROVENANCE.txt"
 cat "$OV/src/seedsigner/BUILD-PROVENANCE.txt" | sed 's/^/    /'
@@ -244,6 +253,7 @@ mv -f "$BUILT" "$OUT"
 {
   printf '%s\n' "${PROV[@]}"
   echo "patch: $(sha256sum "$HERE/0.8.7-burst-instrumentation.patch" | cut -d' ' -f1)"
+  echo "patch_noseed: $(sha256sum "$HERE/0.8.7-no-seed-kill-switch.patch" | cut -d' ' -f1)"
   echo "image_mb: ${IMAGE_MB}"
   echo "image: $(sha256sum "$OUT" | cut -d' ' -f1)"
   echo "built_from: $(basename "$WORK")"

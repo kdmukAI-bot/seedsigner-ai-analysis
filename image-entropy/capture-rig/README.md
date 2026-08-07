@@ -8,12 +8,23 @@ independent hardware.
 build-instrumented-image.sh          one-shot build
 verify-image.py                      confirms the instrumentation is inside the built image
 0.8.7-burst-instrumentation.patch    the source change, applies to tag 0.8.7
+0.8.7-no-seed-kill-switch.patch      deletes the image-to-mnemonic conversion, applies on top
 ```
 
-**Any seed generated on this build is compromised** — the image bytes it derives from are
-written to the microSD in the clear. The build stamps itself `0.8.7-BURST-DEBUG` on the
-splash and version screen so a card cannot be mistaken for a release. Do not fund a wallet
-created on it.
+**This build cannot turn a captured image into a seed.** The image bytes a seed would derive
+from are written to the microSD in the clear, so rather than rely on a warning, the
+image-to-mnemonic conversion is deleted outright by the kill-switch patch: after the
+final-image review the flow shows "Seed creation disabled" and returns to the main menu. The
+other seed paths (dice, manual entry) are stock and untouched by the instrumentation, but the
+build stamps itself `0.8.7-BURST-DEBUG` on the splash and version screen and must never be
+used as a wallet.
+
+The kill-switch was added 2026-08-07, after the published capture rounds. It sits downstream
+of every capture write, so it alters no measurement; the published data was captured on
+builds without it, under the original "any seed generated on this build is compromised"
+warning. It is a separate patch precisely so the burst patch's SHA-256, recorded in the
+provenance of the captured data, stays intact. `verify-image.py` now requires the kill-switch
+and fails pre-kill-switch images by design: rebuild rather than flash one.
 
 ---
 
@@ -35,7 +46,10 @@ Left alone, deliberately:
 - The 0.25 s pre-capture window in phase 1 is stock v0.8.7.
 
 Changed: the number of captures, the preview-window logging and dumping, and a one-line
-`VERSION` string. The patch touches two files, `views/tools_views.py` and `controller.py`.
+`VERSION` string, across `views/tools_views.py`, `gui/screens/tools_screens.py` and
+`controller.py`. The kill-switch patch then deletes the image-to-mnemonic conversion
+(`ToolsImageEntropyMnemonicLengthView`'s derivation body), so the flow ends at a notice
+instead of a seed.
 
 Because it bursts rather than repeating whole capture flows, **it measures sensor noise
 within one exposure state**, not the difference between two independent seed generations.
@@ -172,7 +186,9 @@ anything.
 
 Then **New Seed → Image entropy**, once per scene. Aim on the live preview, click, then leave
 the device alone: 10 s quiet, then the burst of ten. Under a minute. The final-image review
-screen appears afterwards; accept or back out, the data is already written.
+screen appears afterwards; accept or back out, the data is already written. Accepting shows
+the "Seed creation disabled" notice and returns to the main menu: on this build the flow has
+no seed to offer.
 
 Rest the device on a table rather than holding it — a motionless device is the conservative
 case, since any hand movement only adds to the measured difference. **Write down the scene

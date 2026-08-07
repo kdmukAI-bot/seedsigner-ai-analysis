@@ -937,6 +937,14 @@ series is the worst of all 45 pairs, selected on the estimator being reported. T
 series containing byte-identical frames, because for a final-image burst a duplicate means the
 instrumentation failed.</p>
 
+<p><strong>Differences are signed</strong> (<code>later &minus; earlier</code>), and the domain
+matters on lit series. Signed, absolute and modular-256 differences agree only while the modal
+difference is 0 and the zeros outnumber the &plusmn;1s: that holds for every dark series here
+(the 113-bit run scores 113 in either domain), but fails for lit ones, where taking absolute
+values moves the mode to 1 and drops the bookshelf baseline from 1,505,982 to
+<strong>1,156,876</strong> bits, 23% low. A recomputation that does not match a lit figure
+should check its difference domain before filing anything.</p>
+
 <div class="note warn">
   <span class="tag">What this estimate is not</span>
   <p>MCV assumes IID differences, and spatially correlated sensor noise is not IID. A full
@@ -1518,6 +1526,11 @@ of them caught this analysis during drafting.</p>
       <td class="num"><a href="#l-1">IE-L-01</a>, <a href="#totals">&sect;4</a></td>
     </tr>
     <tr>
+      <td>A recomputed lit figure lands 20&ndash;35% below the published one</td>
+      <td>Difference-domain mismatch: published figures use signed differences (later &minus; earlier). Absolute values move the lit mode to 1 and drop the bookshelf baseline from 1,505,982 to 1,156,876 and the stationary wall run from 1,490,163 to 971,412; dark figures are domain-invariant, so the error hides there</td>
+      <td class="num"><a href="#estimator-mcv">&sect;4</a></td>
+    </tr>
+    <tr>
       <td>A bigger margin means a proportionally stronger seed</td>
       <td>SHA-256 emits 256 bits regardless of how much goes in. 256 is a threshold; an attacker attacks 256 bits, not a multi-million-bit photograph</td>
       <td class="num"><a href="./#implementation">Analysis &sect;1</a></td>
@@ -1684,8 +1697,11 @@ latter re-hashes every dumped frame against its logged digest.</p>
 <p>The instrumented build is packaged in
 <a href="capture-rig/README.md"><code>capture-rig/</code></a>: a one-shot, provenance-gated build
 script, a verifier that reads the app source back out of the finished artifact rather than
-trusting the staged tree, and
-<a href="capture-rig/0.8.7-burst-instrumentation.patch">the patch</a> itself. The build refuses
+trusting the staged tree, and the patches themselves:
+<a href="capture-rig/0.8.7-burst-instrumentation.patch">the burst instrumentation</a>, plus a
+<a href="capture-rig/0.8.7-no-seed-kill-switch.patch">no-seed kill-switch</a> (added
+2026-08-07) that deletes the image-to-mnemonic conversion so a capture build cannot turn the
+bytes it just dumped into a seed. The build refuses
 refs it cannot trace to the upstream remotes and stamps any override into the
 <code>PROVENANCE.txt</code> shipped with the data; it also refuses an OS tree without
 <code>BR2_PACKAGE_PYTHON_PICAMERA=y</code>, because without that package the release's capture
@@ -1699,6 +1715,12 @@ minute.</p>
   derived from are written to the microSD card in the clear. That is the entire point of the build,
   and it is why no release does this. The version stamp exists so a card cannot be mistaken for a
   release. <strong>Do not fund a wallet created on it.</strong></p>
+  <p><strong>Update 2026-08-07:</strong> the rig now removes that failure mode outright. A second
+  patch deletes the image-to-mnemonic conversion, so the image-entropy flow ends at a "Seed
+  creation disabled" notice instead of a seed, and <code>verify-image.py</code> refuses images
+  built without it. The published data predates the kill-switch, which sits downstream of every
+  capture write and alters no measurement. The other seed flows (dice, manual entry) are stock;
+  the build remains a lab tool, never a wallet.</p>
 </div>
 
 <h3 id="worthmost"><a class="anchor" href="#worthmost">What would be worth the most</a></h3>
@@ -1834,9 +1856,23 @@ deterministic reproduction path from the shipped data are now marked as such whe
 <a href="#m-6">IE-M-06</a>, whose held-button captures were not retained).</p>
 
 <p><strong>Corrections after publication will be recorded here</strong>, with what changed and why.
-Nothing has been published and later revised at this point, so there is nothing to list. Errors
-caught during drafting are in <a href="#traps">section 11</a> as reviewer aid, which is a different
-thing and is not presented as a correction history.</p>
+Errors caught during drafting are in <a href="#traps">section 11</a> as reviewer aid, which is a
+different thing and is not presented as a correction history.</p>
+
+<ul>
+  <li><strong>2026-08-07, difference domain made explicit.</strong> Added a paragraph to
+  <a href="#estimator-mcv">section 4</a> and a row to the <a href="#traps">traps table</a>:
+  published figures difference in the signed domain (later &minus; earlier), and recomputing a
+  lit series over absolute values lands 20&ndash;35% low. Dark series are domain-invariant. A
+  clarification for anyone recomputing; no published figure changed.</li>
+  <li><strong>2026-08-07, no-seed kill-switch added to the capture rig.</strong> A second patch,
+  <a href="capture-rig/0.8.7-no-seed-kill-switch.patch"><code>0.8.7-no-seed-kill-switch.patch</code></a>
+  (<code>04ae1136</code>), deletes the image-to-mnemonic conversion so a capture build cannot
+  turn the bytes it writes to the microSD into a seed, and <code>verify-image.py</code> now
+  requires it. The burst patch (<code>21dd1fd3</code>) is unchanged, the published data predates
+  the kill-switch, and no measurement or figure is affected. <a href="#repro">Section 14</a> was
+  updated to match.</li>
+</ul>
 
 <h3 id="figureparams"><a class="anchor" href="#figureparams">Figure parameters</a></h3>
 
