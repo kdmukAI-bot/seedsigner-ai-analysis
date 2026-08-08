@@ -480,7 +480,11 @@ before checking the button, so a held button cannot skip the window; and more fu
 the code check what this analysis measured, a count of <em>distinct</em> frame digests in the
 window, before accepting a capture. Appending more frames is no fix on its own, because with the
 lens blocked the appended frames are the known constant. The companion document carries the full
-accounting and the measured evidence behind each recommendation.</p>
+accounting and the measured evidence behind each recommendation. The button-handling half has
+since been filed upstream: <a href="https://github.com/SeedSigner/seedsigner/pull/990">seedsigner
+PR #990</a> (2026-08-08) requires a fresh press, with every button seen released, at both the
+live preview and the final review; it was open, not merged, when this link was added. The
+distinct-digest check remains a recommendation.</p>
 
 <p>Scope, stated honestly in both directions: this is a real design finding, not a break. No
 capture was ever shown to produce a weak seed; the thinnest margin observed was 1.52&times; on a

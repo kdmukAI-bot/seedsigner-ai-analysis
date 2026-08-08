@@ -1294,7 +1294,10 @@ silent path it created went unnoticed until instrumentation.</p>
 
 <ul>
   <li><strong>Append before checking the button</strong> (or require a released edge). Small,
-  closes route 2 completely. It does nothing for route 1.</li>
+  closes route 2 completely. It does nothing for route 1. Filed upstream 2026-08-08 as
+  <a href="https://github.com/SeedSigner/seedsigner/pull/990">seedsigner PR #990</a>, which takes
+  the released-edge form at both the live preview and the final image review and adds Screen-level
+  tests covering the held-button sequences; open, not merged, when this link was added.</li>
   <li><strong>An entropy health check on frame content: a minimum count of distinct frame digests
   in the window before a capture is accepted.</strong> This is the fix the measurements actually
   argue for, because it addresses both routes and the mechanism behind them.
@@ -1906,6 +1909,11 @@ reviewer aid, which is a different thing and is not presented as a correction hi
   document reads as responding to the revision it examined rather than as silently wrong. To make
   that hash visible, both mastheads gained a Revision entry, stamped with the deployed commit by
   the Pages workflow at deploy time. Process only; no claim, figure or measurement changed.</li>
+  <li><strong>2026-08-08, upstream fix filing linked.</strong> The held-button fix this document
+  recommends (<a href="#fix">section 8</a>) was filed upstream as
+  <a href="https://github.com/SeedSigner/seedsigner/pull/990">seedsigner PR #990</a>, and both
+  documents now link it where the recommendation is stated, recorded as open at link time. Its
+  progress changes no figure; the distinct-digest health check remains unfiled.</li>
 </ul>
 
 <h3 id="figureparams"><a class="anchor" href="#figureparams">Figure parameters</a></h3>
