@@ -96,10 +96,11 @@ a.cid:hover{ color:var(--accent-ink); }
   <p class="standfirst">Every measurement behind the image entropy analysis, with the method that
   produced it, the raw frames it was computed from, and the command that recomputes it. Written to
   be checked rather than read.</p>
+  <p style="font-family:var(--mono); font-size:.72rem; letter-spacing:.08em; color:var(--muted); margin:0">Updated 2026-08-09 &middot; <a href="#corrections">what changed</a></p>
   <dl class="meta">
     <div><dt>Companion to</dt><dd><a href="./">The analysis</a></dd></div>
     <div><dt>Version</dt><dd>0.8.7</dd></div>
-    <div><dt>Raw data</dt><dd>32 runs, ~340&nbsp;MB</dd></div>
+    <div><dt>Raw data</dt><dd>42 runs, ~470&nbsp;MB</dd></div>
     <div><dt>Claims</dt><dd>Addressable by ID</dd></div>
     <div><dt>Revision</dt><dd><span data-deploy-rev>working copy</span></dd></div>
   </dl>
@@ -189,9 +190,10 @@ commands.</p>
 <table>
   <thead><tr><th>Estimator</th><th>Bounds entropy from</th><th>What it answers</th><th>Script</th></tr></thead>
   <tbody>
-    <tr><td><strong>Most-common-value min-entropy</strong><br>SP 800-90B &sect;6.3.1, worst of all 45 pairs</td><td>Below, approximately</td><td>What an attacker guessing seeds faces. Every headline figure in both documents</td><td class="num"><a href="analyze_mcv.py">analyze_mcv.py</a></td></tr>
+    <tr><td><strong>Most-common-value min-entropy</strong><br>SP 800-90B &sect;6.3.1, worst of all 45 pairs</td><td>Below, approximately</td><td>What an attacker guessing seeds faces. The canonical per-run figures in this document; part one's headline figures are the standardized floor</td><td class="num"><a href="analyze_mcv.py">analyze_mcv.py</a></td></tr>
     <tr><td><strong>Preview-window structure</strong><br>digest counts, content classes, pairwise MCV among distinct frames</td><td>Structural facts are exact; MCV as above</td><td>How many of the 50 slots carried anything, and what</td><td class="num"><a href="analyze_preview.py">analyze_preview.py</a></td></tr>
     <tr><td><strong>Compressed size</strong><br>best of bzip2 and LZMA</td><td>Above</td><td>How much structure remains in a difference. Historical; no headline figure uses it</td><td class="num"><a href="analyze_burst.py">analyze_burst.py</a></td></tr>
+    <tr><td><strong>Full SP 800-90B non-IID assessment</strong><br>minimum over ten estimators, NIST reference tool, mod-256 pooled pairs</td><td>Below, standardized floor</td><td>How far MCV leans optimistic, measured per regime (<a href="#estimator-nist90b">&sect;4</a>, <a href="#m-19">IE-M-19</a>&ndash;<a href="#m-21">IE-M-21</a>)</td><td class="num"><a href="analyze_nist90b.py">analyze_nist90b.py</a></td></tr>
   </tbody>
 </table>
 </div>
@@ -205,9 +207,15 @@ commands.</p>
   <em>maximum</em> separation), so the analyzer selects over every pairing, on the estimator it
   reports.</li>
   <li><strong>MCV is itself an over-estimate of the floor.</strong> It assumes IID differences and
-  sensor noise is spatially correlated; a full SP 800-90B assessment would take the minimum over
-  ten estimators, every one of which can only return less (<a href="#l-1">IE-L-01</a>). Every
-  margin in this document leans optimistic, which matters most for the thinnest rows.</li>
+  sensor noise is spatially correlated; a full SP 800-90B assessment takes the minimum over ten
+  estimators, and that minimum can only sit at or below MCV, because MCV is one of the ten
+  (individual estimators can exceed it). <strong>The full assessment has now been run on every
+  retained final-image series</strong> (<a href="#estimator-nist90b">&sect;4</a>): the standardized
+  floor lands 1.9&ndash;3.1&times; below the published MCV figures on lit series and
+  1.6&ndash;72&times; below on properly dark ones, which puts every properly dark final on the
+  standard-geometry units under 256; the Plus-display unit is the measured exception
+  (<a href="#m-19">IE-M-19</a>, <a href="#m-20">IE-M-20</a>, <a href="#l-1">IE-L-01</a>). Every
+  MCV margin in this document leans optimistic, which matters most for the thinnest rows.</li>
   <li><strong>A compressed figure quoted with floor language ("minimum", "guarantee", "an attacker
   faces") is an error in this document, and reporting one is a valid finding.</strong></li>
 </ul>
@@ -255,11 +263,14 @@ the pixel discriminator (<a href="#m-17">IE-M-17</a>). Auto-exposure is only a o
 corroborant: every properly dark run locked at its unit's stable dark gain (3.25 or 3.625), and
 a low locked gain indicates light was present, but a high locked gain indicates nothing, because
 most lit indoor runs also locked at 3.1&ndash;3.6 (only the bright wall runs locked low).
-<strong>It does not mean a dim room.</strong> No condition between ordinary lighting and near-total blackout was
-measured (<a href="#l-14">IE-L-14</a>), and every flagged light contamination of the dark state,
-however small, moved the figure upward by a large factor (roughly 7&times; to over 100&times;
-across the flagged runs), so the collapse phenomena in this document live at the blackout end of
-the illumination axis, not merely in low light.</p>
+<strong>It does not mean a dim room.</strong> The middle of the illumination axis, dim but not
+blocked, was unmeasured until the 2026-08-08 dim ladder (<a href="data6/RUNS.md">data6</a>,
+five levels from clearly visible to black on one unit; <a href="#l-14">IE-L-14</a>): its
+levels remain distinct from the blocked-lens state this document's dark claims are scoped to,
+and every flagged light contamination of the dark state, however small, moved the figure upward
+by a large factor (roughly 7&times; to over 100&times; across the flagged runs), so the collapse
+phenomena in this document live at the light-starved end of the illumination axis, not merely in
+low light.</p>
 
 <h3 id="incomparable"><a class="anchor" href="#incomparable">Comparability and naming hazards</a></h3>
 
@@ -287,9 +298,9 @@ with the reason:</p>
 <table>
   <thead><tr><th>Finding</th><th>Why it is rejected</th></tr></thead>
   <tbody>
-    <tr><td>Absence of a camera-validation check in code, filed as a novel critical</td><td>Known and adjudicated (<a href="#a-3">IE-A-03</a>). The sharpened, evidence-backed form, a distinct-digest health check on the preview window, is already this analysis's own recommendation (<a href="#oneLayer">section 8</a>). A re-filing adds nothing unless it carries new evidence</td></tr>
+    <tr><td>Absence of a camera-validation check in code, filed as a novel critical</td><td>Known and adjudicated (<a href="#a-3">IE-A-03</a>). The sharpened, evidence-backed form, a distinct-digest health check on the preview window, is this analysis's own recommendation (<a href="#oneLayer">section 8</a>), filed upstream as <a href="https://github.com/SeedSigner/seedsigner/pull/991">PR #991</a>. A re-filing adds nothing unless it carries new evidence</td></tr>
     <tr><td>Byte-identical frames in a preview window prove the instrumentation failed</td><td>Backwards for that series type. Preview duplicates are the finding: a light-starved scene legitimately quantizes to a constant. <a href="analyze_preview.py">analyze_preview.py</a> exists precisely because <a href="analyze_mcv.py">analyze_mcv.py</a>'s duplicate guard is correct for final-image bursts and wrong for windows</td></tr>
-    <tr><td>The dark runs never clear the requirement / the device is broken in the dark</td><td>Every measured chain cleared 256, including all six preview-zero runs (<a href="#m-4">IE-M-04</a>). The finding is thin, luck-governed margins and a failed redundancy argument, not failure</td></tr>
+    <tr><td>The dark runs never clear the requirement, filed without estimator scoping</td><td>Scoping is the whole question, and both halves are now measured (2026-08-09): on MCV every measured chain cleared 256, including all six preview-zero runs (<a href="#m-4">IE-M-04</a>); under the full ten-estimator floor the preview-zero chains do not clear (<a href="#m-20">IE-M-20</a>). A filing that picks one estimator and ignores the other adds nothing; the un-scoped "device is broken in the dark" form also ignores that the state is one an ordinary capture has no reason to visit (<a href="#a-5">IE-A-05</a>)</td></tr>
     <tr><td>Exfiltration, or entropy data at rest</td><td>The image buffer is never transmitted and never written to storage on a release image</td></tr>
     <tr><td>Persistence of secrets across boot</td><td>The device runs entirely in RAM; root filesystem is an initramfs image</td></tr>
     <tr><td>Physical access, or a malicious microSD card</td><td>Outside the stated threat model</td></tr>
@@ -309,7 +320,7 @@ only one that produces evidence this analysis does not already contain.</p>
   <thead><tr><th class="num">Level</th><th>What you do</th><th>What it requires</th><th>What it can settle</th></tr></thead>
   <tbody>
     <tr><td class="num">1</td><td>Read the claims and attack the reasoning</td><td>This page</td><td>Logic errors, overstated language, an estimator quoted on the wrong side, a disposition whose weakest point is load-bearing</td></tr>
-    <tr><td class="num">2</td><td>Recompute every figure from the shipped raw frames</td><td>Python and numpy. <strong>No hardware</strong></td><td>Whether the numbers in <a href="#results">section 5</a> are what the published frames actually produce</td></tr>
+    <tr><td class="num">2</td><td>Recompute every figure from the shipped raw frames</td><td>Python and numpy; the SP 800-90B floor figures additionally need NIST's reference tool (<a href="#repro">section 14</a>). <strong>No hardware</strong></td><td>Whether the numbers in <a href="#results">section 5</a> and <a href="#estimator-nist90b">section 4</a> are what the published frames actually produce</td></tr>
     <tr><td class="num">3</td><td><strong>Rebuild the capture process and take your own frames</strong></td><td>Docker, a Pi Zero variant, an OV5647 camera module, a microSD card</td><td>Everything level 2 cannot: whether any of this generalizes beyond the author's own four units</td></tr>
   </tbody>
 </table>
@@ -532,7 +543,8 @@ amber caveat badge; plain verified claims wear green.</p>
     <dt>Condition</dt><dd>Face-down (lens toward the desk surface) on a shadowed desk. No seal, no enclosure, no intent</dd>
     <dt>Recompute</dt><dd><code>python3 analyze_preview.py data3/burst-19700101-000117-934f</code> (and siblings)</dd>
     <dt>Geometry note</dt><dd>Preview frames are square at the panel's larger dimension, so the 320&times;240 Plus panel yields 320&times;320 preview frames; both constants remain computable from the panel dimensions alone</dd>
-    <dt>Weakest point</dt><dd>One unit exhibits the full collapse (the below-rail unit, <a href="#m-9">IE-M-09</a>); the railed units held 2&ndash;5 distinct frames. Which side of that line a given user's device sits on is a per-unit accident</dd>
+    <dt>Weakest point</dt><dd>In the blocked-lens condition, one unit exhibits the full collapse (the below-rail unit, <a href="#m-9">IE-M-09</a>); the railed units held 2&ndash;5 distinct frames there. Which side of that line a given user's device sits on is a per-unit accident</dd>
+    <dt>Scope note</dt><dd>The blocked-lens scoping is load-bearing: the data6 ladder's darkest run, <strong>lens open in a totally dark house, reproduced the preview-zero state on a railed unit</strong> (<code>data6/001447-6b66</code>: 48 identical all-zero frames, chain floor 50 bits). Light starvation is the mechanism; the lens is only one way to starve it. The railed-units-stay-live correlation holds only in the blocked-lens condition this claim is scoped to, and <a href="data6/RUNS.md">data6/RUNS.md</a> carries the lens-open occurrence</dd>
   </dl>
 </div>
 
@@ -540,14 +552,17 @@ amber caveat badge; plain verified claims wear green.</p>
   <div class="claimhead"><a class="cid" id="m-4" href="#m-4">IE-M-04</a><span class="st st-verified">Verified &middot; measured &middot; headline</span></div>
   <p class="body"><strong>The thinnest measured chain totaled 389 bits against the required 256: a
   1.52&times; margin.</strong> A preview-zero run whose total was its final image. The six
-  preview-zero finals to date, in descending order: 2,969, 1,110, 550, 517, 496, 389, with nothing
-  changed between sessions; the lower tail thins by pure repetition. <strong>Every measured chain
-  in this work, dark and lit, cleared 256.</strong></p>
+  blocked-lens preview-zero finals, in descending order: 2,969, 1,110, 550, 517, 496, 389, with
+  nothing changed between sessions; the lower tail thins by pure repetition. (The ladder's
+  lens-open preview-zero chain, <code>data6/001447-6b66</code>, totaled 1,283 on this estimate,
+  floor 50; <a href="#m-3">IE-M-03</a>'s scope note.) <strong>Every measured chain in this work,
+  dark and lit, cleared 256 on this estimate.</strong></p>
   <dl>
     <dt>Run</dt><dd><code>data4/000117-934f</code></dd>
-    <dt>Scope</dt><dd>"Measured chain" means every camera layer measured (data3&ndash;data5), or the final image alone already clearing 256 (data1). The data2 chains are indeterminate, not failures: finals as low as 173 with preview windows that predate the window instrumentation. No capture anywhere in this work was shown to fall short of 256</dd>
+    <dt>Scope</dt><dd>"Measured chain" means every camera layer measured (data3&ndash;data6), or the final image alone already clearing 256 (data1). The data2 chains are indeterminate, not failures: finals as low as 173 with preview windows that predate the window instrumentation. No capture anywhere in this work was shown to fall short of 256 <em>on the most-common-value estimate</em>; under the standardized floor the preview-zero chains do fall short, per the Amendment below and <a href="#m-20">IE-M-20</a></dd>
     <dt>Recompute</dt><dd><code>python3 analyze_mcv.py data4/burst-19700101-000117-934f/stock</code></dd>
-    <dt>Weakest point</dt><dd>MCV over-estimates the floor on non-IID data (<a href="#l-1">IE-L-01</a>), so the true margin of that run is below 1.52&times; by an unquantified amount. The 12-word threshold (128) is cleared at 3.0&times;</dd>
+    <dt>Weakest point</dt><dd>MCV over-estimates the floor on non-IID data (<a href="#l-1">IE-L-01</a>), so the true margin of that run is below 1.52&times;. This claim and the "every measured chain cleared 256" sentence are MCV-scoped</dd>
+    <dt>Amendment</dt><dd><strong>2026-08-09: the margin does not survive the standardized floor.</strong> The full ten-estimator assessment (<a href="#m-20">IE-M-20</a>) puts this run's final, and with it the chain total (preview-zero window, so the total is the final), at roughly <strong>36 bits, 0.14&times; the requirement</strong>. All six preview-zero chains land between 36 and 100. The MCV figures stand as what they always were, the most-common-value estimate; the clearance verdict is estimator-scoped, and under the standardized floor it does not hold for the preview-zero dark chains. Recorded in the <a href="#corrections">corrections list</a></dd>
   </dl>
 </div>
 
@@ -631,7 +646,8 @@ amber caveat badge; plain verified claims wear green.</p>
   per-read novelty is hundreds to a few thousand bits.</strong> Typical live frame
   (<code>data3/000150-6b66</code> frame18): 57,254 nonzero bytes, every one green (57,233 ones),
   99.4% of pixels, 346 held back at zero. Adjacent live frames differ in 820&ndash;1,004 bytes
-  (0.36&ndash;0.44%); worst within-run live-live MCV: 469&ndash;1,428 bits across the properly
+  (0.36&ndash;0.44% of the 230,400 RGBA bytes the chain hashes; part one's 0.47% divides the same
+820 by the 172,800 RGB bytes); worst within-run live-live MCV: 469&ndash;1,428 bits across the properly
   dark 240&nbsp;px windows, 4,618 on the properly dark Plus window (4,034 occurs only in a
   light-flagged run).
   Live-vs-constant MCV (~92,000&ndash;94,000) is dominated by the global threshold crossing and
@@ -726,9 +742,10 @@ amber caveat badge; plain verified claims wear green.</p>
 
 <div class="claim">
   <div class="claimhead"><a class="cid" id="m-16" href="#m-16">IE-M-16</a><span class="st st-verified">Verified &middot; measured</span></div>
-  <p class="body"><strong>No final image ever repeated.</strong> 320 final frames across the 32
-  retained runs, lit and dark, all mutually distinct <em>corpus-wide</em>: a global SHA-256 over
-  every retained final returns 320 distinct digests, with no duplicate within or across series.
+  <p class="body"><strong>No final image ever repeated.</strong> 420 final frames across the 42
+  retained runs, lit, dim and
+  dark, all mutually distinct <em>corpus-wide</em>: a global SHA-256 over
+  every retained final returns 420 distinct digests, with no duplicate within or across series.
   (<a href="analyze_mcv.py">analyze_mcv.py</a> additionally refuses any final-image series
   containing duplicates, so every reported series passed that gate.) The uniqueness claim is
   scoped to the final image: preview slots do repeat, and that is the subject of
@@ -766,6 +783,71 @@ amber caveat badge; plain verified claims wear green.</p>
   <dl>
     <dt>Do not quote as v0.8.7</dt><dd><strong>The long-AE configuration is not release behavior.</strong> v0.8.7's window is 0.25&nbsp;s (<code>start_single_frame_mode</code> constructs a fresh camera, sleeps 0.25&nbsp;s, then <code>capture_frame()</code> freezes AE on first call, so one AE state governs a burst). The release's short window is the better of the two for dark-case entropy, and nobody chose it for that reason</dd>
     <dt>Provenance</dt><dd><strong>Not recomputable from the shipped data.</strong> Measured on an early capture set that predates the provenance gate and is not retained in this publication. The claim is kept as a warning to anyone building a capture rig (the patch carries the long-AE phase, commented out), and no other figure in either document rests on it</dd>
+  </dl>
+</div>
+
+<div class="claim">
+  <div class="claimhead"><a class="cid" id="m-19" href="#m-19">IE-M-19</a><span class="st st-verified">Verified &middot; measured</span></div>
+  <p class="body"><strong>The full SP 800-90B non-IID assessment, run on all 42 retained
+  final-image series, lands 1.9&ndash;3.1&times; below the published MCV figures on lit series
+  and 1.6&ndash;72&times; below on the standard units' properly dark ones.</strong> Lit floors:
+  492,833&ndash;1,521,080 bits
+  per frame pair, 1,925&ndash;5,942&times; the 256 a 24-word seed needs, so every lit-scene
+  conclusion survives the strictest standardized estimate. Method, per-series table and regime
+  split in <a href="#estimator-nist90b">section 4</a>; the dim-regime figures carry the
+  stationarity caveat stated there (the estimators punish mixed-brightness scenes as such, and
+  two same-scene dim runs spread 20&times; under the floor while their MCV moved 1.5&times;).
+  The wall-vs-bookshelf ordering is estimator-dependent and within roughly 20% under either
+  reading (MCV: bookshelf 1% ahead; floor: wall 21% ahead), so the featureless-scene refutation
+  (<a href="#m-13">IE-M-13</a>) is strengthened, not weakened, by the conservative suite:
+  featurelessness costs nothing under either estimator, and neither ordering should be read as
+  a ranking of the scenes.</p>
+  <dl>
+    <dt>Recompute</dt><dd><code>python3 analyze_nist90b.py</code>, then NIST's <code>ea_non_iid -i -a &lt;dataset&gt; 8</code> per series; shipped results in <a href="evidence/nist90b-sweep-results.tsv">evidence/nist90b-sweep-results.tsv</a></dd>
+    <dt>Convention</dt><dd>Mod-256 difference domain (forced by 90B's one-byte symbols; lit figures are not directly comparable to the signed-domain MCV numbers) pooled over five disjoint consecutive pairs (mildly optimistic against worst-of-45)</dd>
+    <dt>Weakest point</dt><dd>One tool run per series, one pooling convention, and the ratio conflates the pair-convention difference with the estimator difference. Finals only: the preview layer is unassessed under the suite</dd>
+  </dl>
+</div>
+
+<div class="claim">
+  <div class="claimhead"><a class="cid" id="m-20" href="#m-20">IE-M-20</a><span class="st st-verified">Verified &middot; measured &middot; amends the headline</span></div>
+  <p class="body"><strong>Under the standardized floor, every properly dark final image on the
+  standard-geometry units falls below 256 bits (18 of 18, at 9&ndash;118), and the six
+  blocked-lens preview-zero chains fall with them: 36&ndash;100 bits against the published
+  389&ndash;2,969.</strong> The Plus-display unit's three properly dark finals are the measured
+  exception (532&ndash;2,376; <a href="#estimator-nist90b">&sect;4</a> regime table). For the six
+  preview-zero runs the restatement is direct, because their
+  windows contributed zero and the chain total is the final-image figure under any estimator.
+  (A seventh preview-zero window exists in the corpus, lens open in total darkness on a railed
+  unit: <code>data6/001447-6b66</code>, chain floor 50 bits. It is treated with the dim ladder,
+  and it bears on the knife-edge scoping; see <a href="#m-3">IE-M-03</a>.)
+  The thinnest measured chain, published at 389 bits (1.52&times;, <a href="#m-4">IE-M-04</a>),
+  measures roughly <strong>36 bits (0.14&times;)</strong>. The estimators that drive the drop
+  (t-Tuple, LRS, the predictors) are exactly the ones that punish the repeated structure a
+  mostly-zero dark difference is made of, and the gap widens as conditions worsen: the same
+  pattern the compression-vs-MCV comparison showed, now measured with the standardized suite.
+  The dark-regime design conclusions this document already carried (the layered chain is
+  unreliable exactly where it was assumed to cover, darkness must be detected, not survived)
+  are strengthened; no lit-scene conclusion moves.</p>
+  <dl>
+    <dt>Runs</dt><dd>Preview-zero chains: <code>data3/000025-934f</code> 77, <code>data4/000212-934f</code> 86, <code>data3/000117-934f</code> 100, <code>data3/000202-934f</code> 64, <code>data4/000025-934f</code> 46, <code>data4/000117-934f</code> 36. Full properly-dark population: 9&ndash;118 bits on the standard units, 532&ndash;2,376 on the Plus unit, per <a href="evidence/nist90b-sweep-results.tsv">the sweep table</a> joined with the manifests' flags</dd>
+    <dt>Recompute</dt><dd>As <a href="#m-19">IE-M-19</a>; dark series are difference-domain invariant, so these figures compare directly to the published ones</dd>
+    <dt>Weakest point</dt><dd>The pooled-pairs convention leans optimistic, so the true floors sit at or below these; and the floor of a 99.9%-zero dataset is estimator-driven at the third decimal, so individual dark figures carry wide relative uncertainty. The below-256 conclusion needs none of that precision</dd>
+  </dl>
+</div>
+
+<div class="claim">
+  <div class="claimhead"><a class="cid" id="m-21" href="#m-21">IE-M-21</a><span class="st st-verified">Verified &middot; measured</span></div>
+  <p class="body"><strong>The IID assertion is verified, and the shipped MCV implementation
+  matches NIST's reference tool.</strong> <code>ea_iid</code> failed both lit difference datasets
+  on all three fronts (chi-square, longest repeated substring, permutation testing), confirming
+  what this document had asserted without proof: the non-IID track is the correct one. The
+  tool's own most-common-value estimate agreed with <a href="analyze_mcv.py">analyze_mcv.py</a>'s
+  arithmetic on all 42 sweep datasets, validating the confidence-bound implementation behind
+  every headline figure in both documents.</p>
+  <dl>
+    <dt>Recompute</dt><dd><code>ea_iid -i -a &lt;dataset&gt; 8</code> (tens of minutes per dataset; the permutation tests dominate)</dd>
+    <dt>Weakest point</dt><dd>The IID failure was verified on the two lit datasets only; dark datasets were not put through the permutation tests, their non-IID character being visible in the estimator spread itself</dd>
   </dl>
 </div>
 
@@ -831,6 +913,23 @@ amber caveat badge; plain verified claims wear green.</p>
   </dl>
 </div>
 
+<div class="claim">
+  <div class="claimhead"><a class="cid" id="i-6" href="#i-6">IE-I-06</a><span class="st st-inferred">Inferred &middot; direction measured, size not</span></div>
+  <p class="body"><strong>The dark chains that were carried past 256 by live preview frames
+  likely fall below it under the standardized floor, but this is inferred, not measured.</strong>
+  The final-image layer of those runs drops 1.6&ndash;20&times; under the full assessment
+  (113 &rarr; 64, 190 &rarr; 118, 221 &rarr; 20, 177 &rarr; 9, 432 &rarr; 52;
+  <a href="#m-20">IE-M-20</a>), and
+  there is no mechanism by which the preview layer, the same sensor in the same darkness at
+  lower resolution, would escape a comparable reduction. But preview windows have not been
+  assessed under the suite (their RGBA dumps and sampled coverage need their own dataset
+  construction), so the chain-level restatement outside the preview-zero six remains an
+  inference with a measured direction and an unmeasured size.</p>
+  <dl>
+    <dt>What would settle it</dt><dd>Running the suite over distinct live preview frames per window; the dumps ship, the construction is the open design question (sampled windows, RGBA with a constant alpha plane)</dd>
+  </dl>
+</div>
+
 <h2 id="instrumentation"><a class="anchor" href="#instrumentation"><span class="num">3</span>Instrumentation and capture provenance</a></h2>
 
 <h3 id="traced"><a class="anchor" href="#traced">Traced, not just read</a></h3>
@@ -860,7 +959,7 @@ rather than merely staged.</p>
 
 <h3 id="population"><a class="anchor" href="#population">The retained population</a></h3>
 
-<p>32 runs in five directories, four physical units, two panel geometries. Units are identified by
+<p>42 runs in six directories, four physical units, two panel geometries. Units are identified by
 a truncated SHA-256 of the CPU serial (<code>unit_id</code>), because two are the same board
 model. The enclosure is part of the measured system in every dark run (it is the first light
 barrier the lens sees) and is recorded per unit in <a href="data2/RUNS.md">data2/RUNS.md</a>.</p>
@@ -895,6 +994,7 @@ barrier the lens sees) and is recorded per unit in <a href="data2/RUNS.md">data2
     <tr><td class="num"><a href="data3/RUNS.md">data3</a></td><td>Preview-layer measurement: face-down dark + lit controls</td><td class="num">8</td><td>6b66, 934f</td><td class="num">21dd1fd3</td><td><code>PROVENANCE-round2-pi0.txt</code>, <code>PROVENANCE-round3-pi02w.txt</code></td></tr>
     <tr><td class="num"><a href="data4/RUNS.md">data4</a></td><td>Replication round + Plus-geometry preview measurement</td><td class="num">9</td><td>934f, 6b66, a92a</td><td class="num">21dd1fd3</td><td>Three <code>PROVENANCE-round4-*.txt</code></td></tr>
     <tr><td class="num"><a href="data5/RUNS.md">data5</a></td><td>Blank white wall, handheld and stationary</td><td class="num">2</td><td>6b66</td><td class="num">21dd1fd3</td><td><code>PROVENANCE-round5-pi0.txt</code></td></tr>
+    <tr><td class="num"><a href="data6/RUNS.md">data6</a></td><td>Dim-illumination ladder, five levels, two runs each, descending light</td><td class="num">10</td><td>6b66</td><td class="num">21dd1fd3</td><td><code>PROVENANCE-round6-pi0.txt</code></td></tr>
   </tbody>
 </table>
 </div>
@@ -968,12 +1068,94 @@ should check its difference domain before filing anything.</p>
 <div class="note warn">
   <span class="tag">What this estimate is not</span>
   <p>MCV assumes IID differences, and spatially correlated sensor noise is not IID. A full
-  <a href="https://csrc.nist.gov/pubs/sp/800/90/b/final">SP 800-90B</a> assessment would fail the
-  IID test and take the minimum across ten non-IID estimators, <strong>every one of which can only
-  return a figure at or below this one</strong>. Every margin in this document is therefore an
-  over-estimate of the floor by an unquantified amount, and this caveat travels with every figure,
-  most heavily with the 1.52&times; headline (<a href="#l-1">IE-L-01</a>).</p>
+  <a href="https://csrc.nist.gov/pubs/sp/800/90/b/final">SP 800-90B</a> assessment fails the
+  IID test on this data (verified, <a href="#m-21">IE-M-21</a>) and takes the minimum across ten
+  non-IID estimators. That minimum can only sit at or below the MCV figure, because MCV is one of
+  the ten; individual estimators can and do exceed it, and only the minimum is so bounded (a
+  rewording recorded in the <a href="#corrections">corrections list</a>).
+  <strong>The full assessment has been run</strong> (next subsection): the overstatement is
+  measured, not open-ended, and it is largest exactly where margins are thinnest.</p>
 </div>
+
+<h3 id="estimator-nist90b"><a class="anchor" href="#estimator-nist90b">The full SP 800-90B assessment, run on every retained series</a></h3>
+
+<p>On 2026-08-09 the complete non-IID estimator suite (SP 800-90B section 6.2, minimum over ten
+estimators) was run on all 42 retained final-image series with NIST's reference tool
+(<a href="https://github.com/usnistgov/SP800-90B_EntropyAssessment">usnistgov/SP800-90B_EntropyAssessment</a>,
+<code>ea_non_iid -i -a</code>, 8-bit symbols). Dataset per series: the value-by-value difference
+between captures, <strong>mod 256</strong> (90B caps the alphabet at one byte, and the signed
+domain does not fit; dark series are domain-invariant, lit ones are not), pooled over the five
+disjoint consecutive pairs and truncated to the 1,000,000 samples section 3.1.1 requires.
+Pooling sits between the average and the worst pair, so these floors lean
+<em>optimistic</em> relative to the worst-of-45 convention the MCV figures use.
+<a href="analyze_nist90b.py">analyze_nist90b.py</a> rebuilds every dataset;
+<a href="evidence/nist90b-sweep-results.tsv">the per-series results</a> and
+<a href="evidence/nist90b-sweep-raw-output.txt">the raw tool output</a> ship with this
+document.</p>
+
+<p>Cross-validation came free: the tool's own MCV estimate matched
+<a href="analyze_mcv.py">analyze_mcv.py</a>'s arithmetic on all 42 datasets, and the permutation
+IID test failed on all three fronts (chi-square, longest repeated substring, permutation testing)
+on both lit datasets it was run against, as this document had asserted without proof
+(<a href="#m-21">IE-M-21</a>).</p>
+
+<p>The results split into three regimes:</p>
+
+<div class="tablewrap">
+<table>
+  <thead><tr><th>Regime</th><th class="num">Runs</th><th class="num">Published MCV / standardized floor</th><th class="num">Floor, whole frame</th></tr></thead>
+  <tbody>
+    <tr><td>Lit (bookshelf, wall, lit controls)</td><td class="num">8</td><td class="num">1.9&ndash;3.1&times;</td><td class="num">492,833&ndash;1,521,080 bits (1,925&ndash;5,942&times; the 256 needed)</td></tr>
+    <tr><td>Dim ladder, lens open (data6, all levels)</td><td class="num">10</td><td class="num">2.6&ndash;2,476&times; (artifact-dominated at the dim end, see below)</td><td class="num">37&ndash;560,547 bits</td></tr>
+    <tr><td>Blocked lens, properly dark, standard 480&times;480 units</td><td class="num">18</td><td class="num">1.6&ndash;72&times;</td><td class="num"><strong>9&ndash;118 bits</strong></td></tr>
+    <tr><td>Blocked lens, properly dark, Plus-display unit (640&times;640)</td><td class="num">3</td><td class="num">12&ndash;69&times;</td><td class="num">532&ndash;2,376 bits</td></tr>
+    <tr><td>Blocked lens, light-contaminated (flagged, retained)</td><td class="num">3</td><td class="num">3.6&ndash;14&times;</td><td class="num">5,774&ndash;18,167 bits</td></tr>
+  </tbody>
+</table>
+</div>
+
+<p>Population membership follows the manifests' pixel-band discriminator
+(<a href="#m-17">IE-M-17</a>), run by run, and every row's ranges recompute from
+<a href="evidence/nist90b-sweep-results.tsv">the sweep table</a> joined against the
+per-run flags in the <code>dataN/RUNS.md</code> manifests.</p>
+
+<p><strong>On the standard-geometry units, every properly dark final image falls below 256
+bits under the standardized floor: 18 of 18, at 9&ndash;118 bits</strong>
+(<a href="#m-20">IE-M-20</a>). The Plus-display unit's three properly dark finals do
+<em>not</em> fall below (532&ndash;2,376 bits): they pass the darkness discriminator, and
+their elevation is consistent with the residual-internal-light account its manifests record
+(the roomiest enclosure of the fleet; <a href="#m-17">IE-M-17</a>'s corollary that dark
+comparisons under differing enclosures rank enclosures, not sensors), but that attribution is
+inferred, not isolated, so the honest statement is unit-scoped, not universal.</p>
+
+<p>For the six blocked-lens preview-zero chains the floor restates the chain directly, not by
+inference: their windows contributed zero, so the chain total is the final-image figure under
+either estimator. Published MCV against standardized floor: 2,969 &rarr; 77, 1,110 &rarr; 86,
+550 &rarr; 100, 517 &rarr; 64, 496 &rarr; 46, and the 1.52&times; headline chain 389 &rarr;
+<strong>36 bits</strong>. The sub-256 finals whose chains were carried by live preview frames
+(113 &rarr; 64 and kin) do <em>not</em> restate directly: the preview layer has not been
+assessed under the full suite, and chain-level statements there remain inferences
+(<a href="#i-6">IE-I-06</a>).</p>
+
+<p><strong>Dim mixed scenes break the estimators' stationarity assumption, and the resulting
+floors are real but not tight.</strong> The ten estimators model one distribution; a dim
+bookshelf is a mixture (near-black shelves, isolated highlights), and the suite punishes the
+mixture itself: the whole-frame floor of a mixed scene can land below every brightness band of
+the same frames assessed separately, and two same-scene L1 runs minutes apart scored 27,414
+against 560,547 while their MCV differed only 1.5&times;. (Band and per-photosite construction,
+for anyone recomputing: partition byte positions by their mean level across a run's ten
+captures, or walk one position down all ten captures before moving to the next; truncate to
+1,000,000 samples and assess as above. The recipes and figures are recorded in
+<a href="../docs/knowledge/nist-sp800-90b-applied-to-camera-entropy.md">the repository's
+knowledge document on this assessment</a>.) Dim-regime floors carry this caveat
+wherever they are quoted (<a href="#m-19">IE-M-19</a>). The same mechanism, measured the other
+way, informs the featureless-scene result: in the column construction, the bookshelf band whose
+mean level is comparable to the wall's outscores the wall's whole frame (recipes above), though
+the sessions differ in AE state, and the whole-frame ordering flips with the estimator (MCV:
+bookshelf ahead by 1%; floor: wall ahead by 21%, at 684,759 against 563,774). Scene structure
+contributes nothing the estimators credit under either reading. What was not run: the restart
+tests (they require 1000 restarts), the physical noise model 90B's validation regime demands,
+and the suite over the preview layer (<a href="#l-1">IE-L-01</a>).</p>
 
 <h3 id="estimator-preview"><a class="anchor" href="#estimator-preview">Preview windows: structure first, entropy second</a></h3>
 
@@ -1004,6 +1186,11 @@ rows (by the <a href="#m-17">IE-M-17</a> discriminator) are flagged: their figur
 stray light and are not dark measurements.</p>
 
 <h3 id="results-dark"><a class="anchor" href="#results-dark">Properly dark runs (blocked lens): window structure and finals</a></h3>
+
+<p>Figures below are MCV. Their standardized-floor equivalents, uniformly lower, and below 256
+for every properly dark final on the standard-geometry units, are in
+<a href="#estimator-nist90b">the section 4 sweep</a> and
+<a href="evidence/nist90b-sweep-results.tsv">the per-series table</a>.</p>
 
 <div class="tablewrap">
 <table>
@@ -1083,14 +1270,18 @@ and it sat in a window holding four live frames; every dark <em>total</em> clear
 
 <h3 id="results-lit"><a class="anchor" href="#results-lit">Lit scenes</a></h3>
 
+<p>Figures below are MCV. Standardized-floor equivalents run 1.9&ndash;3.1&times; lower and
+clear the requirement 1,925&ndash;5,942&times; (<a href="#estimator-nist90b">section 4
+sweep</a>).</p>
+
 <div class="tablewrap">
 <table>
   <thead><tr><th>Run</th><th>Scene</th><th>Board</th><th class="num">Still</th><th class="num">Preview distinct</th><th class="num">Final MCV</th><th class="num">vs 256</th></tr></thead>
   <tbody>
-    <tr><td class="num">data1/000025</td><td>Bookshelf</td><td>2 W</td><td class="num">480&times;480</td><td class="num">&mdash;</td><td class="num">1,748,713</td><td class="num">6,830&times;</td></tr>
-    <tr><td class="num">data1/000029</td><td>Bookshelf</td><td>Zero W (bare)</td><td class="num">480&times;480</td><td class="num">&mdash;</td><td class="num">1,581,192</td><td class="num">6,176&times;</td></tr>
-    <tr><td class="num">data1/000111</td><td>Bookshelf</td><td>Zero W + Plus</td><td class="num">640&times;640</td><td class="num">&mdash;</td><td class="num">3,131,353</td><td class="num">12,231&times; (see geometry note)</td></tr>
-    <tr><td class="num">data1/000303</td><td>Bookshelf</td><td>Zero Rev 1.3</td><td class="num">480&times;480</td><td class="num">&mdash;</td><td class="num">1,505,982</td><td class="num">5,882&times;</td></tr>
+    <tr><td class="num">data1/000025</td><td>Bookshelf</td><td>2 W</td><td class="num">480&times;480</td><td class="num">&ndash;</td><td class="num">1,748,713</td><td class="num">6,830&times;</td></tr>
+    <tr><td class="num">data1/000029</td><td>Bookshelf</td><td>Zero W (bare)</td><td class="num">480&times;480</td><td class="num">&ndash;</td><td class="num">1,581,192</td><td class="num">6,176&times;</td></tr>
+    <tr><td class="num">data1/000111</td><td>Bookshelf</td><td>Zero W + Plus</td><td class="num">640&times;640</td><td class="num">&ndash;</td><td class="num">3,131,353</td><td class="num">12,231&times; (see geometry note)</td></tr>
+    <tr><td class="num">data1/000303</td><td>Bookshelf</td><td>Zero Rev 1.3</td><td class="num">480&times;480</td><td class="num">&ndash;</td><td class="num">1,505,982</td><td class="num">5,882&times;</td></tr>
     <tr><td class="num">data3/000630-6b66</td><td>Lit control</td><td>Zero Rev 1.3</td><td class="num">480&times;480</td><td class="num">46 of 50</td><td class="num">1,544,107</td><td class="num">6,031&times;</td></tr>
     <tr><td class="num">data3/000322-934f</td><td>Lit control</td><td>2 W</td><td class="num">480&times;480</td><td class="num">50 of 50</td><td class="num">1,332,455</td><td class="num">5,204&times;</td></tr>
     <tr><td class="num">data5/000053-6b66</td><td>White wall, handheld</td><td>Zero Rev 1.3</td><td class="num">480&times;480</td><td class="num">43 of 50</td><td class="num">1,397,876</td><td class="num">5,460&times;</td></tr>
@@ -1266,7 +1457,8 @@ routes reduce it to one meaningful input, and they compound with each other.</p>
 <p>Measured in section 5: the window collapses to the computable constant, entirely on the
 below-rail unit (six of six), nearly on the railed units (2&ndash;5 distinct of 50). The seed
 rests on the final image, which the same light starvation has thinned; the thinnest measured
-result is the 389-bit / 1.52&times; chain (<a href="#m-4">IE-M-04</a>). Reaching it took setting
+result is the 389-bit / 1.52&times; chain on MCV, roughly 36 bits under the standardized floor
+(<a href="#m-4">IE-M-04</a>, <a href="#m-20">IE-M-20</a>). Reaching it took setting
 the device down lens-down on a desk in shadow.</p>
 
 <h3 id="route-button"><a class="anchor" href="#route-button">Route 2: a held button (deterministic, any lighting)</a></h3>
@@ -1302,13 +1494,28 @@ silent path it created went unnoticed until instrumentation.</p>
   in the window before a capture is accepted.</strong> This is the fix the measurements actually
   argue for, because it addresses both routes and the mechanism behind them.
   <strong>Guaranteeing frame <em>count</em> fixes nothing</strong>: in the dark the appended
-  frames are a known constant, and fifty copies of it carry zero. The check must be on content
-  distinctness, which the digest data shows is cheap to compute and cleanly separates every
-  measured dark window (1&ndash;5 distinct) from every measured lit one (20&ndash;50
-  distinct).</li>
-  <li>A distinct-digest floor also subsumes the stale-frame concern (<a href="#i-4">IE-I-04</a>)
-  and would have flagged every degenerate window in this document.</li>
+  frames are a known constant, and fifty copies of it carry zero. A distinct-digest floor is
+  cheap to compute and catches every duplicate-shaped degeneracy in this document: the
+  preview-zero windows, cached repeats, stale frames (<a href="#i-4">IE-I-04</a>), and the
+  held-button skip.</li>
+  <li><strong>Distinctness alone is not an entropy check, and the data6 ladder proves it</strong>:
+  its effectively-black L4 windows held 19 and 34 <em>distinct</em> frames whose worst live-live
+  pairs carried approximately zero bits (4 and 6 changed values), so a distinct-digest floor
+  would pass a capture whose window carried nearly nothing
+  (<a href="data6/RUNS.md">data6/RUNS.md</a>, "Distinct is not thick"). The blocked-lens
+  windows this document measured do separate cleanly (1&ndash;5 distinct against 20&ndash;50
+  lit), but the dim regime sits in between with high counts and empty pairs. The digest check
+  therefore needs a companion: a light-level check on the capture itself (the single-frame
+  pixel-band discriminator of <a href="#m-17">IE-M-17</a> separates the collapsed levels from
+  the usable ones by two orders of magnitude on the ladder data). Duplicate-shaped failure and
+  light starvation are different axes, and each check covers the one the other cannot.</li>
 </ul>
+
+<p>Two of the three are now filed upstream:
+<a href="https://github.com/SeedSigner/seedsigner/pull/990">PR #990</a> (the held-button fix)
+and <a href="https://github.com/SeedSigner/seedsigner/pull/991">PR #991</a> (a full pool of
+distinct, non-blank preview frames required before the final capture), both open, not merged,
+when these links were added. The light-level check remains unfiled.</p>
 
 <p>These are recommendations to the project, stated as the measurements support them. Whether and
 how they land is a project decision; nothing in this document depends on their adoption.</p>
@@ -1412,8 +1619,9 @@ also looks exactly like a dead camera, and will be reported as one.</p>
   requirement; <strong>that reasoning does not survive the measurements</strong>: the final image
   can simultaneously be thin (<a href="#m-5">IE-M-05</a>), the failure is common-cause rather than
   independent (<a href="#m-11">IE-M-11</a>), and the thinnest measured chain stands at 1.52&times;
-  (<a href="#m-4">IE-M-04</a>).</p>
-  <dl><dt>Weakest point</dt><dd>Every measured chain still cleared 256. The finding is a failed redundancy argument with thin, luck-governed margins, not an observed failure; a reviewer arguing "cleared is cleared" has the measured record on their side and the design argument against them</dd></dl>
+  on MCV, roughly 36 bits under the standardized floor (<a href="#m-4">IE-M-04</a>,
+  <a href="#m-20">IE-M-20</a>).</p>
+  <dl><dt>Weakest point</dt><dd>The "cleared is cleared" counter-argument holds only estimator-scoped: every chain cleared 256 on MCV, but under the full ten-estimator floor the preview-zero chains do not clear, so the disposition rests on the standardized floor being the right yardstick for an adversarial claim. A reviewer preferring MCV can still argue clearance; the burden sits with them</dd></dl>
 </div>
 
 <div class="claim">
@@ -1545,8 +1753,8 @@ of them caught this analysis during drafting.</p>
     </tr>
     <tr>
       <td>1.52&times; is a measured floor with 52% headroom</td>
-      <td>MCV over-estimates the floor on non-IID data, and the chain totals additionally lean on pairwise-times-count and independence assumptions. The true margin of that run is smaller by an unquantified amount</td>
-      <td class="num"><a href="#l-1">IE-L-01</a>, <a href="#totals">&sect;4</a></td>
+      <td>MCV over-estimates the floor on non-IID data, and the chain totals additionally lean on pairwise-times-count and independence assumptions. Measured 2026-08-09: under the full ten-estimator assessment that run totals roughly 36 bits, 0.14&times; the requirement</td>
+      <td class="num"><a href="#m-20">IE-M-20</a>, <a href="#l-1">IE-L-01</a>, <a href="#totals">&sect;4</a></td>
     </tr>
     <tr>
       <td>A recomputed lit figure lands 20&ndash;35% below the published one</td>
@@ -1608,11 +1816,24 @@ are recorded separately</strong>, in <a href="#provenance">section 15</a>.</p>
 <h2 id="limits"><a class="anchor" href="#limits"><span class="num">12</span>What we did not verify</a></h2>
 
 <ol>
-  <li id="l-1"><strong>IE-L-01 &middot; No full NIST SP 800-90B assessment.</strong> Only the
-  most-common-value estimator was run, and it assumes IID data that this is not. The permutation
-  testing, the nine other non-IID estimators and a physical noise model have not been done, and
-  <strong>all of them can only lower the figures</strong>. This caveat binds every margin in the
-  document, most heavily the 1.52&times; headline.</li>
+  <li id="l-1"><strong>IE-L-01 &middot; The SP 800-90B validation regime is not completed, and
+  the estimator portion that has been run does not close it.</strong> The full non-IID
+  estimator suite has been run on every retained final-image series and the IID failure verified
+  (<a href="#estimator-nist90b">&sect;4</a>, <a href="#m-19">IE-M-19</a>&ndash;<a href="#m-21">IE-M-21</a>);
+  the measured overstatement of the MCV figures: 1.9&ndash;3.1&times; on lit series,
+  1.6&ndash;72&times; on the standard units' properly dark ones, and the 1.52&times; headline
+  margin does not survive the floor (<a href="#m-20">IE-M-20</a>). Still not done, and still
+  binding: the restart tests (1000 restarts of 1000 samples, the only 90B component that
+  measures cross-session reproducibility), the documented physical noise model and stationarity
+  case 90B's validation regime requires, the startup and continuous health tests its section 4
+  mandates (the release runs none; the <a href="#fix">section 8</a> recommendations are health
+  tests in exactly this sense), the suite over the preview layer (<a href="#i-6">IE-I-06</a>),
+  the worst-pair convention under the suite (the sweep pools disjoint pairs, which leans
+  optimistic), and the construction gap that the sweep assesses difference data rather than the
+  sequential raw samples 90B contemplates (disclosed in
+  <a href="#estimator-nist90b">&sect;4</a>). MCV figures quoted
+  anywhere in these documents remain estimator-scoped, and the residual gap between the pooled
+  floor and a completed validation still leans one direction: down.</li>
   <li id="l-2"><strong>IE-L-02 &middot; The chain totals compound optimistic assumptions.</strong>
   Distinct-count &times; worst-pair overstates (conditioning on several known frames tells an
   attacker more than one), and summing layers assumes an independence measured to be imperfect
@@ -1660,10 +1881,16 @@ are recorded separately</strong>, in <a href="#provenance">section 15</a>.</p>
   composition exists, in any version.</li>
   <li id="l-13"><strong>IE-L-13 &middot; Scope is image entropy only.</strong> Dice and coin-flip
   entropy, transaction signing and everything else are outside this analysis.</li>
-  <li id="l-14"><strong>IE-L-14 &middot; The middle of the illumination axis is unmeasured.</strong>
-  The measured populations are ordinary lit scenes and effectively total light exclusion (the
-  properly-dark band). Genuinely dim ambient conditions, a dim room or dusk, sit between them and
-  were never captured; nothing in this document characterizes them, in either direction.</li>
+  <li id="l-14"><strong>IE-L-14 &middot; The middle of the illumination axis is measured on
+  one unit, thinly.</strong> The 2026-08-08 dim ladder (<a href="data6/RUNS.md">data6</a>: five
+  levels from clearly visible to black, two runs each, one unit, one scene, one boot) is the
+  sole measurement of that middle. What it shows, in brief: the collapse is a cliff,
+  not a slope (the barely-visible level still measured hundreds of thousands of MCV bits; one
+  level darker fell two orders of magnitude), and under the standardized floor the dim mixed
+  scenes carry the stationarity caveat of <a href="#m-19">IE-M-19</a>. What remains unmeasured:
+  every other unit, every other scene, and any principled mapping from the ladder's levels to
+  conditions a user would recognize; n=2 per level characterizes the cliff's existence, not its
+  position in the wild.</li>
 </ol>
 
 <h2 id="analyses"><a class="anchor" href="#analyses"><span class="num">13</span>External analyses</a></h2>
@@ -1700,12 +1927,17 @@ your work aligned with the version it examined when these documents are later re
 
 <h3 id="fromshipped"><a class="anchor" href="#fromshipped">From the published frames, no hardware needed</a></h3>
 
-<p>All 32 runs ship in full (~340&nbsp;MB), each with its on-device <code>capture.log</code>, under
+<p>All 42 runs ship in full (~470&nbsp;MB), each with its on-device <code>capture.log</code>, under
 per-round provenance records. Every figure in <a href="#results">section 5</a> comes back out of
 them:</p>
 
 <pre><code># final images, min-entropy, every retained series
 python3 analyze_mcv.py
+
+# full SP 800-90B non-IID assessment inputs (then run NIST's tool on each; section 4)
+python3 analyze_nist90b.py
+git clone https://github.com/usnistgov/SP800-90B_EntropyAssessment  # build cpp/, then:
+ea_non_iid -i -a nist90b-datasets/data4_000117-934f_diff.bin 8
 
 # preview-window structure, per run (data3 onward)
 python3 analyze_preview.py data3/burst-19700101-000150-6b66
@@ -1760,9 +1992,12 @@ minute.</p>
   <p><strong>Any unit that is not one of the four measured here.</strong> The gain knife-edge
   (<a href="#m-9">IE-M-09</a>) is unanimous over n=4 and confounded; a fifth unit's dark sessions
   either extend the correlation or break it, and both outcomes are findings.</p>
-  <p><strong>Dark preview windows on more units.</strong> The preview-zero state has been observed
-  on one unit (six of six). A second below-rail unit, or a railed unit that collapses, would move
-  the knife-edge claim from correlation toward mechanism.</p>
+  <p><strong>Dark preview windows on more units.</strong> The blocked-lens preview-zero state has
+  been observed on one unit (six of six), and the data6 ladder has since produced a lens-open
+  preview-zero window on a railed unit in total darkness (<a href="#m-3">IE-M-03</a>'s scope
+  note), which bounds the knife-edge correlation to the blocked-lens condition. A second
+  below-rail unit, or a railed unit that collapses with the lens blocked, would move what
+  remains of that claim from correlation toward mechanism.</p>
   <p><strong>Any measurement of the post-0.8.7 native camera engine's preview path.</strong> The
   content findings are expected to carry to it (<a href="#l-9">IE-L-09</a>); nobody has measured
   it.</p>
@@ -1813,7 +2048,7 @@ behind <a href="#history">section 7</a>. The build, capture and validation proce
 <div class="tablewrap">
 <table>
   <tbody>
-    <tr><th>Analysis</th><td class="num">2026-07-31; instrumented rounds 2026-08-03/04; measurement programme and full data rebuild 2026-08-05/06</td></tr>
+    <tr><th>Analysis</th><td class="num">2026-07-31; instrumented rounds 2026-08-03/04; measurement program and full data rebuild 2026-08-05/06; dim ladder 2026-08-08; SP 800-90B assessment sweep 2026-08-09</td></tr>
     <tr><th>What it is not</th><td class="num">An audit. No independent engagement, no certification. Not an official SeedSigner project publication</td></tr>
     <tr><th>App reviewed</th><td class="num">tag 0.8.7 &middot; commit e0a80d4b &middot; upstream-verified</td></tr>
     <tr><th>OS reviewed</th><td class="num">tag v0.8.7 &middot; commit d1385939 &middot; upstream-verified</td></tr>
@@ -1924,6 +2159,61 @@ reviewer aid, which is a different thing and is not presented as a correction hi
   where it previously said "noise" for the photon contribution, reserving "noise" for what the
   sensor adds. The section 5 held-button advice now notes the pending upstream fix (PR #990).
   Explanatory prose only; no figure, measurement or claim status changed.</li>
+  <li><strong>2026-08-09, full SP 800-90B assessment run; the 1.52&times; headline margin does
+  not survive it; dim ladder joins the corpus.</strong> Prompted by readers citing "NIST
+  standards" against this analysis, the complete non-IID estimator suite (NIST reference tool,
+  minimum over ten estimators) was run on every retained final-image series, including a new
+  ten-run dim-illumination ladder (<a href="data6/RUNS.md">data6</a>), which grows the corpus
+  from 32 runs to 42. What it changed: (1) IE-L-01's unquantified overstatement caveat is now
+  measured, 1.9&ndash;3.1&times; on lit series, 1.6&ndash;72&times; on the standard units'
+  properly dark ones
+  (<a href="#m-19">IE-M-19</a>); (2) on the standard-geometry units every properly dark final
+  falls below 256 bits under the
+  standardized floor (the Plus-display unit's three properly dark finals are the measured
+  exception), so the six preview-zero chains, including the 389-bit 1.52&times;
+  headline chain, restate to 36&ndash;100 bits and the "every measured chain cleared 256"
+  verdict is now recorded as MCV-scoped (<a href="#m-20">IE-M-20</a>, amendment on
+  <a href="#m-4">IE-M-04</a>); (3) the IID failure this document asserted is verified and the
+  shipped MCV arithmetic validated against the reference tool on all 42 datasets
+  (<a href="#m-21">IE-M-21</a>); (4) a section 1 and section 4 claim that all ten estimators
+  "can only return less" than MCV was reworded: only the minimum is so bounded, individual
+  estimators can exceed MCV (true on this data, not guaranteed in general); (5) IE-L-14's
+  "never captured" dim gap is replaced by the ladder's measurements, with its own limits
+  stated. Lit-scene conclusions do not move: the strictest standardized floor still clears
+  the requirement 1,925&ndash;5,942&times; on every lit series. The practical advice gained two
+  user-facing lines ("never capture in that state"; do not seed from a preview that looks dim
+  or nearly black), and the published wall-vs-bookshelf comparison changed shape: "within 10%"
+  (MCV) is now presented as estimator-dependent and within roughly 20% under either reading,
+  with the ordering flipping between estimators. New artifacts: <a href="analyze_nist90b.py">analyze_nist90b.py</a>,
+  <a href="evidence/nist90b-sweep-results.tsv">the sweep results</a>,
+  <a href="evidence/nist90b-sweep-raw-output.txt">raw tool output</a>, and
+  <a href="#estimator-nist90b">the new section 4 subsection</a> carrying method and regime
+  tables. Both mastheads now carry an <strong>Updated</strong> date linking to this corrections
+  record, so readers who remember earlier figures can date the change. The analysis (part one)
+  now quotes the standardized floor as its headline figure throughout, keeping the
+  most-common-value estimate only where it is load-bearing (pair-level mechanism figures, the
+  preview layer the suite has not assessed, and the dark-chain margin, where both readings are
+  given); this document remains the canonical home of the per-estimator detail. Before
+  publication this change set went through a fresh three-reviewer adversarial pass
+  (recomputation, claims and conventions attack, citation verification against fresh source
+  fetches), whose confirmed findings were re-verified and applied the same day: the dark-floor
+  claim was corrected from a false universal to the unit-scoped form above (the reviewer caught
+  three properly dark Plus-unit finals above 256 in the shipped sweep table), the section 4
+  regime table was rebuilt so every row recomputes from a single stated population, the
+  ladder's lens-open preview-zero window and its distinct-but-empty L4 windows were propagated
+  into the claims and recommendations they bear on (<a href="#m-3">IE-M-03</a> scope note,
+  <a href="#m-4">IE-M-04</a>, the <a href="#fix">section 8</a> two-check recommendation), the
+  wall-vs-bookshelf ordering was reframed as estimator-dependent, a citation year and a
+  regime run-count were corrected, and estimator-scoping and history-narration cleanups were
+  applied throughout.</li>
+  <li><strong>2026-08-09, second upstream fix filed.</strong> The distinct-frames
+  recommendation (<a href="#fix">section 8</a>), recorded as unfiled in the 2026-08-08 entry,
+  was filed upstream as
+  <a href="https://github.com/SeedSigner/seedsigner/pull/991">seedsigner PR #991</a>: the
+  capture flow requires a full pool of distinct, non-blank preview frames before the final
+  image can be taken, recorded as open, not merged, when this link was added. Both documents'
+  recommendation status wording was updated to match. The light-level check remains unfiled.
+  Status links only; no figure, measurement or claim status changed.</li>
 </ul>
 
 <h3 id="figureparams"><a class="anchor" href="#figureparams">Figure parameters</a></h3>

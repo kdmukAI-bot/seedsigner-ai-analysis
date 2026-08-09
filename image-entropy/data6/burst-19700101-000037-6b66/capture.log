@@ -1,0 +1,86 @@
+timestamp: 19700101-000037
+board: Raspberry Pi Zero Rev 1.3
+panel: 240x240
+requested_resolution: 480x480
+unit_id: 6b665e1fa1d5   (sha256 of CPU serial, truncated)
+quiet_period_s: 10.0
+burst_n: 10
+preview_frames_chained: 50
+microsd_free_bytes: 177573888   need: 13824000 (10 burst x 691200 + 20 preview x 230400)
+preview 00: digest=ae539209135360af47d97766fabd7a6a7577112ff5e2c592c9ff74a2dddf349e bytes=230400 mode=RGBA size=240x240
+preview 01: digest=56d4a600712b7c5a9f1198a96cfbe80a0417507c82c09dba12ced9c70cd8cf6b bytes=230400 mode=RGBA size=240x240
+preview 02: digest=a55f2d8f0d993df1511d90a188cb702e9519262fd3092425435562052bd7b766 bytes=230400 mode=RGBA size=240x240
+preview 03: digest=c738e3eebbae5fa3426fe1d789ce76b13f90f49d92a44e000fcf570df7d55a24 bytes=230400 mode=RGBA size=240x240
+preview 04: digest=2f96149a672707928cd1a3cbc5948e81aec67ce6cbd766798173fb9de07e7d8b bytes=230400 mode=RGBA size=240x240
+preview 05: digest=e9d393cdab48b47d0680a233209727337d312d8cf2a5ff7481915b6b3eaff3b4 bytes=230400 mode=RGBA size=240x240
+preview 06: digest=76152d31350c75eb3576c643f2dd4ccd116a8148b59046aa84034827b110274b bytes=230400 mode=RGBA size=240x240
+preview 07: digest=b881b3d63df3ebfec599ddd97a8dcd5ad12fb11a1cb16e29d5f40e507827447c bytes=230400 mode=RGBA size=240x240
+preview 08: digest=95687661d0662b7c54f25376f6ce11eeebf3bd74fcf94b2562fcad25ed0c65c7 bytes=230400 mode=RGBA size=240x240
+preview 09: digest=b9ac5de77acb2698a0bb56af1cffba294fe402a25e3415a615d6f04139362b1e bytes=230400 mode=RGBA size=240x240
+preview 10: digest=9183e7bd4ddc453352f18666ea71baa3ca265f551a714764747af4c0edbfa164 bytes=230400 mode=RGBA size=240x240
+preview 11: digest=3db7c4bff8d55f43d5b0c8ccb0b50a53d8d0eb579c23e08e51f2b1897472f71d bytes=230400 mode=RGBA size=240x240
+preview 12: digest=44cd083db424027bbcaaf3ca17378b321c190bc0f0186fdbbb92e9e320331c52 bytes=230400 mode=RGBA size=240x240
+preview 13: digest=816f7caf2bf7673c13c544291c8cc48e6831591921fe6114e678b6863fbe2e62 bytes=230400 mode=RGBA size=240x240
+preview 14: digest=2d010ad6c9fe4000c5cbd46b2494fbc45924c90c874fc240a51ebe26ad188a4f bytes=230400 mode=RGBA size=240x240
+preview 15: digest=034e47686e6c37402cae57438f383c81eb6df2e31d9ccb6ca23b63c8acbc2645 bytes=230400 mode=RGBA size=240x240
+preview 16: digest=869525898444178e7d39d5cb745c53880fa9012c937e5ee114091119d0f3ebfa bytes=230400 mode=RGBA size=240x240
+preview 17: digest=501d19530b9ed6965edc0892366b8ef2f91b145c1f20d98349891f79f192c06f bytes=230400 mode=RGBA size=240x240
+preview 18: digest=34cf6930097a0e75c6a5feade50092941a4e0532fb255fc8d1b4e5f3c46e4d27 bytes=230400 mode=RGBA size=240x240
+preview 19: digest=9c23971c0372ae05d7e9ecbfc50f2990ec9acde80191bbe2d3323e000a178641 bytes=230400 mode=RGBA size=240x240
+preview 20: digest=9fcec36ef992747aaf09b3e0c471dcc2abc2a6971348275b12f1aa1640bca658 bytes=230400 mode=RGBA size=240x240
+preview 21: digest=bb6d727e97276ac9537edc7938804bc41da70873b95da5fb9f4183ef46c5dc46 bytes=230400 mode=RGBA size=240x240
+preview 22: digest=28bc283e921cd2913905fd4529458710e80397231ff9fd7ef050d0ede877ec44 bytes=230400 mode=RGBA size=240x240
+preview 23: digest=7166415ea3b841e2ec849a93a5186fcc25d0944836018d3fb5d75e15455c2dc1 bytes=230400 mode=RGBA size=240x240
+preview 24: digest=496fa2dbf072d51c4b9a759781307ace993158e12ab6333e2d1082fac21292bc bytes=230400 mode=RGBA size=240x240
+preview 25: digest=0cfb96ff8c4b71c781654dbb03a1408951aa94484177e542d14c526864673b2b bytes=230400 mode=RGBA size=240x240
+preview 26: digest=14f2fe4827a9ea883cd363a4917f7ac00fb7c42abec6e2f98b828bc1fca76f03 bytes=230400 mode=RGBA size=240x240
+preview 27: digest=9fd45b2820e6562b7aea5ab6f2a71b5dc2d3bf94f66fb36c42f899ae0c615cf5 bytes=230400 mode=RGBA size=240x240
+preview 28: digest=259898e473628cc2eff170017a102d5312c40c8281901c35142b18b9810fd5cf bytes=230400 mode=RGBA size=240x240
+preview 29: digest=69ac33039a852dd3980d938768f5672f71f7d1f1a80cf9a8114344d6ca37ede9 bytes=230400 mode=RGBA size=240x240
+preview 30: digest=8a9caf3ee753d513b9d26a6347be2bec558501eda02466a269d748d393fef115 bytes=230400 mode=RGBA size=240x240
+preview 31: digest=91bfca2897276ee8015548b4262e0809d03e844962fb80991884ee33493d8b24 bytes=230400 mode=RGBA size=240x240
+preview 32: digest=6f9de1b9a3478a1696d2591374e1a40dc04df1051e64a0aca565eab370987e12 bytes=230400 mode=RGBA size=240x240
+preview 33: digest=d68a139e71caf7b183f3a1b62ee555cebe4a47780bf2dedefa1d35688e1c3bc8 bytes=230400 mode=RGBA size=240x240
+preview 34: digest=2642f39b8941e698dd388a4dd843eaf3164b4c05a207601833cc521b20e18d23 bytes=230400 mode=RGBA size=240x240
+preview 35: digest=2642f39b8941e698dd388a4dd843eaf3164b4c05a207601833cc521b20e18d23 bytes=230400 mode=RGBA size=240x240
+preview 36: digest=a12e81ccf607645453840e12cdb5d36c30bd69ca3612078106e3fce1ae8d9a4a bytes=230400 mode=RGBA size=240x240
+preview 37: digest=8b16f6b983c795d7e1d44261125ee333be29d5d54d8ac6f35ef9050871f66c1f bytes=230400 mode=RGBA size=240x240
+preview 38: digest=ce844b4269b2196ae4e73b39c8acff37c4cd6cdef48dac9c53ea947a844ee635 bytes=230400 mode=RGBA size=240x240
+preview 39: digest=8404094a07a23f308e16b575f2f9b96b386b900142bb61bf1095aa73d6773b7a bytes=230400 mode=RGBA size=240x240
+preview 40: digest=099a6fbf0f7776fc9316d7b0f812879dddc3976a47d88939feded3ceeca610c3 bytes=230400 mode=RGBA size=240x240
+preview 41: digest=735b448e1cad762e8febbc34ae9566a7caba6589891d304a79ad012b40ad8a92 bytes=230400 mode=RGBA size=240x240
+preview 42: digest=735b448e1cad762e8febbc34ae9566a7caba6589891d304a79ad012b40ad8a92 bytes=230400 mode=RGBA size=240x240
+preview 43: digest=c353e72eb891655f565aa7eaabef8f33475cf3308a9c73f05675877869038454 bytes=230400 mode=RGBA size=240x240
+preview 44: digest=6c8a20f9c00621c01e58e157c990b75c72a888c43508907694978f3bc717b991 bytes=230400 mode=RGBA size=240x240
+preview 45: digest=ce75f4b4b60012f78ac264219b11e5134d7aa9fc2a14edc1be30e5398caba21c bytes=230400 mode=RGBA size=240x240
+preview 46: digest=cea78fbc47792dae234d3da96f36529233b4e5e918af9e1b30b0944d407008ac bytes=230400 mode=RGBA size=240x240
+preview 47: digest=a0eae4ad5d652efe3244c1c8df846a68643deed3ac4c7ba9294f4bb9585ee5f5 bytes=230400 mode=RGBA size=240x240
+preview 48: digest=0a536c18b30b87b35bef5ad107e8d694ae489de5eb22e1657eb0ddaf7921ba76 bytes=230400 mode=RGBA size=240x240
+preview 49: digest=8b212e0f91fe2b3ccb1e53f5d00a226cd2715bae0c03550be4b69c41af182bce bytes=230400 mode=RGBA size=240x240
+preview_distinct_frames: 48 of 50
+
+preview_none_reads: 8   (camera warm-up polls, no frame)
+preview_warmup_s: 0.210   (stream start -> first append)
+preview_appends_total: 68   (whole session; window keeps the last 50)
+preview_loop_rate_fps: 11.65   over 5.752 s
+preview_window_span_s: 4.188   content_changes: 47   delivery_rate_fps: 11.22
+preview_gap_s: min=0.0732 median=0.0854 max=0.1019
+preview_click_to_last_append_s: 0.0122
+preview_total_s: 5.974   (stream start -> click)
+preview_frame_offsets_s (index:seconds_before_click): 0:4.200 1:4.103 2:4.014 3:3.917 4:3.840 5:3.751 6:3.672 7:3.584 8:3.506 9:3.417 10:3.340 11:3.252 12:3.174 13:3.085 14:3.009 15:2.921 16:2.843 17:2.754 18:2.677 19:2.591 20:2.511 21:2.426 22:2.346 23:2.260 24:2.159 25:2.060 26:1.969 27:1.869 28:1.774 29:1.690 30:1.599 31:1.502 32:1.425 33:1.335 34:1.262 35:1.175 36:1.098 37:1.016 38:0.919 39:0.842 40:0.752 41:0.679 42:0.594 43:0.517 44:0.431 45:0.341 46:0.265 47:0.182 48:0.085 49:0.012
+preview_frames_dumped: 30   indices: 0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,40,41,42,43,44,45,46,47,48,49
+preview_extra_dumped: 10   indices: 10,11,12,13,14,15,16,17,18,19   (unsampled digests still uncovered: 19)
+
+--- phase: stock   ae_window_s=0.25   camera_revision=ov5647 ---
+ae_before_lock: exposure_speed=32978 shutter_speed=0 analog_gain=1.1875 digital_gain=3.625 iso=0 awb_gains=(1.26171875, 1.7265625) exposure_mode=auto
+frame 00: bytes=691200 mode=RGB size=480x480 gap=0.000 capture_s=0.630
+frame 01: bytes=691200 mode=RGB size=480x480 gap=0.630 capture_s=0.598
+frame 02: bytes=691200 mode=RGB size=480x480 gap=0.598 capture_s=0.590
+frame 03: bytes=691200 mode=RGB size=480x480 gap=0.590 capture_s=0.591
+frame 04: bytes=691200 mode=RGB size=480x480 gap=0.591 capture_s=0.591
+frame 05: bytes=691200 mode=RGB size=480x480 gap=0.591 capture_s=0.591
+frame 06: bytes=691200 mode=RGB size=480x480 gap=0.591 capture_s=0.591
+frame 07: bytes=691200 mode=RGB size=480x480 gap=0.591 capture_s=0.591
+frame 08: bytes=691200 mode=RGB size=480x480 gap=0.591 capture_s=0.591
+frame 09: bytes=691200 mode=RGB size=480x480 gap=0.591 capture_s=0.591
+ae_after_burst: exposure_speed=32909 shutter_speed=32909 analog_gain=3.5625 digital_gain=1.1015625 iso=0 awb_gains=(1.26171875, 1.7265625) exposure_mode=off

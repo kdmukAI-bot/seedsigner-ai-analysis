@@ -82,17 +82,20 @@ A common skeleton, not a specification.
   measured. Inferred means reasoned, with the inference stated.
 - **Pin every source link to a tag**, never a branch, so line numbers stay correct.
 - **Pin every layer of the measured stack, not just the one being edited.** A measurement
-  claiming to characterise a released version must be built from refs traceable to that
+  claiming to characterize a released version must be built from refs traceable to that
   release at *every* layer — app, OS, firmware — with each pinned ref recorded alongside the
   data. Pinning the layer you happen to be modifying while taking another from whatever
-  branch was convenient yields a result that characterises nothing shipped, and nothing in
+  branch was convenient yields a result that characterizes nothing shipped, and nothing in
   the data shows it. Verify against the **upstream** remote specifically: a fork can carry
   the release tag's name without the release's contents. Enforced by the provenance gate in
   `image-entropy/capture-rig/build-instrumented-image.sh`, which refuses to build from a ref
   it cannot trace upstream and stamps any override into the provenance record.
 - **Publish corrections made after publication.** Once a document is public, a substantive
   change is recorded in it — what changed and why — rather than silently applied. Pre-publication
-  drafting is not a correction history and should not be presented as one.
+  drafting is not a correction history and should not be presented as one. Each document's
+  masthead carries an **Updated** date linking to its corrections record; bump it in the same
+  edit as the corrections entry, so a reader who remembers different figures can date the
+  change. Body prose otherwise states the current analysis without narrating its own history.
 - **State the weakest point** of each disposition. A reviewer should be able to find the soft
   spots without re-deriving the whole analysis.
 - **Ship the raw data.** Measurements include the inputs they were computed from, so a
@@ -138,6 +141,8 @@ Applies to every analysis. Candidate findings that depend on these do not apply:
 - Color is semantic: the accent is structural only (rules, eyebrows, section numbers), green
   carries "verified", amber carries "caveat". Never put the accent on a status element.
 - Figures state their processing parameters — gain, crop, scaling — so they can be regenerated.
+- **Short paragraphs, one point each**, especially in part one. A paragraph that makes three
+  points is three paragraphs. Break rather than pack.
 - **American spellings** throughout: color, behavior, favoring, labeled, modeling, analyze,
   -ize rather than -ise. The exception is quoted material: source code, code comments, and
   direct quotations keep whatever spelling the original used.
