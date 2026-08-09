@@ -13,10 +13,10 @@
 <meta property="og:image" content="https://kdmukai-bot.github.io/seedsigner-ai-analysis/image-entropy/figures/social_card.jpg">
 <meta property="og:image:width" content="1200">
 <meta property="og:image:height" content="630">
-<meta property="og:image:alt" content="A photograph of a bookshelf beside the difference between it and the next capture, amplified forty times: the photograph, and the sensor noise it conceals.">
+<meta property="og:image:alt" content="A photograph of a bookshelf beside the difference between it and the next capture, amplified forty times: the photograph, and the per-pixel variation it conceals.">
 <meta name="twitter:card" content="summary_large_image">
 <meta name="twitter:image" content="https://kdmukai-bot.github.io/seedsigner-ai-analysis/image-entropy/figures/social_card.jpg">
-<meta name="twitter:image:alt" content="A photograph of a bookshelf beside the difference between it and the next capture, amplified forty times: the photograph, and the sensor noise it conceals.">
+<meta name="twitter:image:alt" content="A photograph of a bookshelf beside the difference between it and the next capture, amplified forty times: the photograph, and the per-pixel variation it conceals.">
 <link rel="stylesheet" href="../assets/fonts.css">
 <link rel="stylesheet" href="../assets/series.css">
 <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 16 16%22><text y=%2213%22 font-size=%2213%22>&#128247;</text></svg>">
@@ -163,19 +163,24 @@ analysis does.</p>
 thing twice and get the same seed? Point the device at the same desk on two different days, or
 take two shots in a row without moving, and it feels as though the result might repeat.</p>
 
-<p>For the final photograph, it never has, and in practice cannot, and this section is the
-demonstration. <strong>Two photographs of the same scene are never the same photograph.</strong>
+<p><strong>Two photographs of the same scene are never the same photograph.</strong>
 Be precise about the claim: it is not that no individual pixel repeats. Plenty do. What never
-repeats is the frame taken as a whole. Two things drive it.</p>
+repeats is the frame taken as a whole. Three things drive it.</p>
 
 <ol>
   <li><strong>The camera moves.</strong> Held in a hand, it is impossible to avoid some movement
   changing where it is aimed.</li>
-  <li><strong>More importantly, the sensor is imperfect.</strong> Every read adds noise of its
-  own, from heat in the sensor and from the readout electronics that turn what it collected into
-  numbers. A camera module costing a few dollars is a very noisy one, but that is not really the
-  point: <strong>a perfect sensor does not exist, at any price.</strong> Every frame carries a
-  fresh dose of its sensor's own imprecision.</li>
+  <li><strong>More importantly, the light itself arrives randomly.</strong> Light is delivered
+  in discrete photons, and how many of them land on each photosite during one exposure is a
+  fresh quantum-statistical draw every frame. This is the natural variation of the signal
+  itself, not something the camera adds; the technical term is photon shot noise. In a lit
+  scene it is the dominant source of frame-to-frame change:
+  <strong>a perfect sensor photographing a perfectly steady scene would still never take the
+  same photograph twice.</strong></li>
+  <li><strong>And the sensor adds imprecision of its own.</strong> Every read adds noise from
+  heat in the silicon and from the readout electronics that turn collected charge into numbers.
+  In a lit scene this is the smaller contribution; it matters because it is the floor that
+  remains when the light goes away, which is what <a href="#dark">section 4</a> is about.</li>
 </ol>
 
 <p>And a hash has no notion of similarity. Change a single pixel by one step and the end result is
@@ -216,8 +221,8 @@ values are different</strong> between the two. Subtract one capture from the oth
 what is left, and you can see where: the entire scene subtracts away, and what remains is what
 changed between the two exposures. Notice that the change covers the frame rather than collecting
 in one place.
-That is the signature of sensor noise; something moving in the room would leave its change where
-the something was.</p>
+That is the signature of per-pixel variation; something moving in the room would leave its
+change where the something was.</p>
 
 <figure class="wide">
   <div class="plates">
@@ -227,6 +232,22 @@ the something was.</p>
   <figcaption>The difference between the two captures, amplified at fixed linear gains of
   &times;12 and &times;40, clipped.</figcaption>
 </figure>
+
+<p>The &times;40 plate shows the bookshelf itself, redrawn in variation: the brightest regions
+of the original photograph are where the difference is largest, and the shadowed gaps between
+books stay comparatively quiet. That is
+the randomness of the light itself, made visible. The variation grows with the amount of light
+collected, so each pixel's frame-to-frame change tracks how brightly lit that pixel was, and
+the difference image becomes a dim rubbing of the scene's illumination.</p>
+
+<div class="note">
+  <span class="tag">The same physics, productized</span>
+  <p>Commercial quantum random number generators have been built from exactly this: an image
+  sensor measuring the random arrival of photons. One demonstration ran on nothing but a phone
+  camera (<a href="https://arxiv.org/abs/1405.0435">Sanguinetti et&nbsp;al. 2014, <em>Quantum
+  random number generation on a mobile phone</em></a>), and chip-scale descendants ship inside
+  consumer phones today. A lit SeedSigner capture harvests the same physics.</p>
+</div>
 
 <p>Magnify a small patch and let the two captures alternate, and you can watch it happen: the
 lettering holds perfectly still while the surface crawls. <strong>97.5% of the pixels in that
@@ -285,9 +306,9 @@ build fed into its chain.</p>
 
 <p>There is nothing to tell apart by looking. In the data, even this most-alike pair differs in
 <strong>77.69% of the frame's color values</strong>. In the magnified crop,
-everything that moves is noise, because noise is all there is. And the same subtraction as before
-shows the whole frame at once: the wall subtracts away, and a dense field of per-pixel sensor
-noise remains.</p>
+everything that moves is variation, because variation is all there is. And the same subtraction
+as before shows the whole frame at once: the wall subtracts away, and a dense field of per-pixel
+variation remains.</p>
 
 <figure class="wide">
   <div class="plates">
@@ -314,12 +335,14 @@ seed actually faces; the method and its limits are in the
 <p><strong>A featureless scene is not a degenerate scene.</strong> The blank wall landed within
 10% of the same unit's bookshelf figure, and essentially every byte position in the frame
 (691,192 of 691,200) changed at least once across its ten captures, against 98.89% for the
-bookshelf. Scene structure contributes
-almost nothing to these figures; the entropy is per-pixel sensor noise, and a uniformly lit field
-exercises it as fully as a cluttered one. The worry about the blank wall conflates two different
-things, a featureless scene and a light-starved sensor, and the measurements separate them
-cleanly: what decides everything is whether light reaches the sensor at all, not what the light
-is bouncing off. The next section is about what happens when it stops arriving.</p>
+bookshelf. Scene structure contributes almost nothing to these figures, and
+<a href="#unique">section 2</a> says why: the wall is featureless, but it is <em>bright</em>, so
+every photosite sits deep in the photon regime, collecting its own fresh random draw of light
+each frame, and a uniformly lit field exercises that source as fully as a cluttered one does. The worry
+about the blank wall conflates two different things, a featureless scene and a light-starved
+sensor, and the measurements separate them cleanly: what decides everything is whether light
+reaches the sensor at all, not what the light is bouncing off. The next section is about what
+happens when it stops arriving.</p>
 
 <div class="note">
   <span class="tag">The approach is well established</span>
@@ -518,7 +541,11 @@ ate the remaining 1.52&times;.</p>
 
 <ul>
   <li><strong>A held button skips the preview layer entirely</strong>: it carries through the
-  preview, the capture and the accept screens in one gesture, and no frame is ever chained.</li>
+  preview, the capture and the accept screens in one gesture, and no frame is ever chained. An
+  upstream fix is pending: <a href="https://github.com/SeedSigner/seedsigner/pull/990">seedsigner
+  PR #990</a> (open, not merged, when this note was added) makes the flow ignore a still-held
+  press, so only a fresh tap advances it. Until it ships in a release you are running, the habit
+  is the fix.</li>
   <li><strong>A tap gives the design the 50 frames it was built around.</strong> The window fills
   in roughly three and a half to six seconds of live preview, depending on the board, so the few
   seconds spent aiming are already doing that work. Holding the preview open longer does not add
