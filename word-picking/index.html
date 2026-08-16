@@ -1,0 +1,198 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Drawing BIP-39 words — building a seed by drawing words rather than computing them</title>
+<meta name="description" content="Choosing BIP-39 words directly from a physical set: what makes the draw fair, what can go wrong with the set itself, and which devices will complete the phrase.">
+<meta property="og:type" content="article">
+<meta property="og:site_name" content="SeedSigner AI Analysis">
+<meta property="og:title" content="Drawing BIP-39 words (work in progress)">
+<meta property="og:description" content="Choosing BIP-39 words directly from a physical set: what makes the draw fair, what can go wrong with the set itself, and which devices will complete the phrase.">
+<meta property="og:url" content="https://kdmukai-bot.github.io/seedsigner-ai-analysis/word-picking/">
+<meta name="twitter:card" content="summary">
+<link rel="stylesheet" href="../assets/fonts.css">
+<link rel="stylesheet" href="../assets/series.css">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 16 16%22><text y=%2213%22 font-size=%2213%22>&#127991;</text></svg>">
+<style>
+.wip{border:1px solid var(--warn);background:var(--raised);padding:1.1rem 1.3rem;margin:2rem 0}
+.wip .tag{font-family:var(--mono);font-size:.63rem;letter-spacing:.15em;text-transform:uppercase;
+  color:var(--warn);display:block;margin-bottom:.6rem}
+.wip p{margin:0 0 .6rem;font-size:.95rem;line-height:1.55}
+.wip p:last-child{margin-bottom:0}
+</style>
+</head>
+<body>
+<button class="themetoggle" type="button" aria-label="Toggle light and dark theme">&#9681;</button>
+<div class="wrap">
+
+<header class="masthead">
+  <p class="eyebrow">Reference &middot; Bitcoin seed generation</p>
+  <h1>Drawing BIP-39 words</h1>
+  <p class="standfirst">Building a seed by drawing BIP-39 words from a physical set, one at a
+  time, rather than rolling for entropy and computing them. Companion to
+  <a href="../dice/standard.html">Dice to seed</a>, which covers the methods that start from
+  rolls.</p>
+  <dl class="meta">
+    <div><dt>First published</dt><dd>&mdash;</dd></div>
+    <div><dt>Scope</dt><dd>Word draws &rarr; BIP-39</dd></div>
+    <div><dt>Also called</dt><dd>BIP-39 lottery</dd></div>
+    <div><dt>Method</dt><dd>Source-read</dd></div>
+    <div><dt>Status</dt><dd>Work in progress</dd></div>
+  </dl>
+</header>
+
+<div class="wip">
+  <span class="tag">Work in progress</span>
+  <p>This document is not complete and not everything in it has been verified.</p>
+</div>
+
+<section class="short">
+  <span class="tag">The short version</span>
+  <p class="verdict">The words you draw are the phrase itself, with only the final word
+  computed.</p>
+  <ul>
+    <li><b>Draw 23 words and the device computes the 24th. Draw 11 and it computes the
+    12th.</b> Both are ordinary BIP-39 phrases. Nothing converts anything, so there is no
+    construction to get wrong and nothing to reproduce elsewhere.</li>
+    <li><b>Put each word back before drawing the next.</b> Drawing without replacement is the one
+    mistake in this method that costs real entropy.</li>
+    <li><b>The set is the part that can be wrong.</b> All 2048 words have to be present exactly
+    once and a phrase built from a flawed set carries no trace of it.</li>
+    <li><b>Several dice worksheets are this method already</b>, with dice standing in for the draw.
+    <a href="../dice/standard.html#paper">Dice to seed &sect;12</a> catalogs them.</li>
+  </ul>
+</section>
+
+<h2 id="method"><a class="anchor" href="#method"><span class="num">1</span>The method</a></h2>
+<p>Take a complete set of the 2048 BIP-39 words as physical objects: printed slips, tiles, or
+tablets. The words you draw from it are the seed.</p>
+<p><strong>Twenty-three draws give a 24-word seed. Eleven give a 12-word one.</strong> Both are
+ordinary BIP-39 phrases and both are a normal way to use this method; the shorter one is not a
+degraded version of the longer. A signing device then completes the phrase with a final word, which
+carries the checksum and so cannot be chosen freely.</p>
+<p>Nothing is converted along the way. There is no hashing, no lookup table, and no arithmetic of
+any kind between the draw and the phrase.</p>
+
+<h2 id="fairness"><a class="anchor" href="#fairness"><span class="num">2</span>How to do the draw</a></h2>
+<ol>
+  <li><strong>Return each word before drawing the next.</strong> Every draw has to see all 2048.
+  This is the one rule here that costs real entropy if you break it and it is why the common name
+  <em>BIP-39 lottery</em> misleads: a lottery draws without replacement and no number can
+  repeat.</li>
+  <li><strong>Mix between every draw.</strong> One pick must not be linked to the last. Reaching
+  into the same corner each time, or taking from the top of a pile that was never disturbed, makes
+  each draw depend on the one before it.</li>
+  <li><strong>Draw blind, from a container you cannot see into.</strong> A bag beats a bowl for
+  exactly this reason.</li>
+  <li><strong>Make sure no piece is identifiable by touch.</strong> Anything that sets a piece
+  apart by feel, a warped tile, a rough edge, one that was marked or damaged, is a piece your
+  fingers can find and the draw is no longer blind.</li>
+  <li><strong>Write each word down as you draw it</strong> and confirm the piece went back before
+  the next draw. Doing both in one motion is what stops a set quietly becoming 2047.</li>
+</ol>
+<p>Only the first of these is arithmetic. The rest are handling and no published measurement of
+how strongly human drawing correlates consecutive picks is known here, which is the same gap the
+dice document records for human handling. The advice is therefore conservative rather than
+measured. The same concern is set out for dice in
+<a href="../dice/standard.html#practice">Dice to seed &sect;4</a>.</p>
+
+<h2 id="the-set"><a class="anchor" href="#the-set"><span class="num">3</span>The set is the part that can be wrong</a></h2>
+<p>All 2048 words have to be present, exactly once each. A missing word can never be drawn, a
+duplicated one is drawn twice as often, and the finished phrase carries no evidence of either.</p>
+<p>A printed table is exposed to the same mistake and is far easier to audit, since it can be
+compared against the wordlist line by line where a physical set has to be counted. The worksheets
+surveyed for the dice document turned up only capitalization artifacts, which are harmless. A
+missing tile is not.</p>
+<p><strong>Short labels are sufficient and are not a shortcut.</strong> Every BIP-39 word is
+uniquely identified by its first four letters, verified against the wordlist for this document, so
+a tile carrying three or four characters is unambiguous.</p>
+
+<h2 id="sets"><a class="anchor" href="#sets"><span class="num">4</span>Available sets</a></h2>
+<p>Not a survey. These are the sets encountered so far, recorded to be checked rather than
+recommended.</p>
+<div class="tablewrap">
+<table>
+  <thead><tr><th>Set</th><th>Form</th><th>Notes</th></tr></thead>
+  <tbody>
+    <tr><td><a href="https://github.com/SeedSigner/SeedPills">SeedSigner/SeedPills</a></td><td>Print your own</td><td>Python generates OpenSCAD source for a grid of two-sided pills; a full set is 1024 pieces. Pinned at <code>1acc11e</code>, no license stated</td></tr>
+    <tr><td>Entropia</td><td>Commercial tablets</td><td>Two-sided tablets carrying 3 to 4 letter labels, 1024 pieces for the full 2048 words. Sold by several vendors; not verified here</td></tr>
+    <tr><td>Cut-up wordlist</td><td>Paper</td><td>Costs nothing and is the hardest to get right, since 2048 slips must be cut, checked, and kept complete</td></tr>
+  </tbody>
+</table>
+</div>
+<p class="weak">To do: verify each set against the wordlist the way the dice worksheets were, and
+record what a set has to carry to be listed.</p>
+
+<h2 id="trust"><a class="anchor" href="#trust"><span class="num">5</span>What is left to verify</a></h2>
+<p><strong>There is no arithmetic for a device to get wrong.</strong> The word you draw is the word
+you write down, so nothing stands between the entropy and the phrase.</p>
+<p>That narrows the trust question to a single point: the final word is the device's only
+contribution and the only place it can misbehave. Foundation Passport is worth knowing about here,
+because it supplies that word from its own random number generator rather than showing you the
+valid choices.</p>
+<p>It also means there is nothing to cross-check. Where a method computes the phrase from
+something else, that something else is a separate record which reproduces the seed on any other
+implementation, and comparing the two is how you catch a device that lied. Here the draw and the
+phrase are the same thing, so there is no second opinion available to get.
+<a href="../dice/standard.html#trust">Dice to seed &sect;5</a> builds its whole argument on that
+difference.</p>
+
+<div class="note">
+  <span class="tag">The last word's spare bits</span>
+  <p>The final word carries the checksum, but not only the checksum. A few bits of the seed come
+  from whoever settles that word rather than from your draws.</p>
+  <div class="tablewrap">
+  <table>
+    <thead><tr><th>You draw</th><th>Phrase</th><th>Bits from your draws</th><th>Valid final words</th><th>Bits from the choice</th></tr></thead>
+    <tbody>
+      <tr><td class="num">11</td><td>12 words</td><td class="num">121 of 128</td><td class="num">128</td><td class="num">7</td></tr>
+      <tr><td class="num">23</td><td>24 words</td><td class="num">253 of 256</td><td class="num">8</td><td class="num">3</td></tr>
+    </tbody>
+  </table>
+  </div>
+  <p><strong>Who supplies those bits is not fixed and at least one device asks you.</strong>
+  SeedSigner's Calc Final Word tool takes 11 or 23 words and then lets you set the spare bits from
+  coin flips, from a BIP-39 word you choose, or from zeros. Whether other implementations offer the
+  same choice was not established here.</p>
+  <p>The options are not equivalent. Coin flips make those bits random like the rest. Zeros make
+  them fixed and public, which leaves 121 or 253 bits of real entropy rather than 128 or 256: still
+  far past any attacker, but chosen rather than stumbled into.</p>
+  <p>At the other end, Foundation Passport picks the final word with its own random number
+  generator instead of showing you the valid ones, so those bits are the device's and not yours.</p>
+</div>
+
+<h2 id="scope"><a class="anchor" href="#scope"><span class="num">6</span>Scope</a></h2>
+<p>This document ends at a BIP-39 phrase. Schemes that produce a different artifact are out of
+scope however hand-friendly they are, including
+<a href="https://github.com/bitcoin/bips/blob/master/bip-0093.mediawiki">codex32 (BIP-93)</a>, whose
+output is a BIP-32 master seed.</p>
+<p>A word set is also specific to one wordlist. SLIP-39 uses 1024 words rather than 2048. Of those, 553 are
+also BIP-39 words sitting at different positions, so a phrase drawn from the wrong set looks
+entirely plausible and is not the seed you think it is.</p>
+
+<h2 id="same-method"><a class="anchor" href="#same-method"><span class="num">7</span>How this relates to the dice worksheets</a></h2>
+<p>A dice worksheet hands you a printed table and has you roll to choose a row. A bag of tiles has
+you reach in and choose one directly. <strong>What differs is the selector, not the method.</strong>
+Both produce 23 freely chosen words and leave the same final word to the device.</p>
+<p>This is clearest in the schemes that use both at once. SeedPicker has you draw a paper ticket
+<em>and</em> roll a six-sided die, the pair addressing one word between them.</p>
+<p>The consequence is that everything <a href="../dice/standard.html#paper">Dice to seed
+&sect;12</a> establishes about the worksheet method applies here: which devices will complete a
+hand-built phrase, which vendors publish tables, and the fact that the capability is far more
+widespread than the advertising suggests.</p>
+
+</div>
+<script>
+(function () {
+  var b = document.querySelector('.themetoggle');
+  if (!b) return;
+  b.addEventListener('click', function () {
+    var cur = document.documentElement.getAttribute('data-theme');
+    if (!cur) cur = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+    document.documentElement.setAttribute('data-theme', cur === 'dark' ? 'light' : 'dark');
+  });
+})();
+</script>
+</body>
+</html>

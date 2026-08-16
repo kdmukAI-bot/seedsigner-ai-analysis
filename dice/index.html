@@ -5,6 +5,12 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>SeedSigner dice entropy — AI analysis and full release history</title>
 <meta name="description" content="How SeedSigner turns dice rolls into a seed phrase: dynamically traced, cross-checked against other independent implementations, and tracked across every release since 2020.">
+<meta property="og:type" content="article">
+<meta property="og:site_name" content="SeedSigner AI Analysis">
+<meta property="og:title" content="SeedSigner dice entropy">
+<meta property="og:description" content="How SeedSigner turns dice rolls into a seed phrase: dynamically traced, cross-checked against other independent implementations, and tracked across every release since 2020.">
+<meta property="og:url" content="https://kdmukai-bot.github.io/seedsigner-ai-analysis/dice/">
+<meta name="twitter:card" content="summary">
 <link rel="stylesheet" href="../assets/fonts.css">
 <link rel="stylesheet" href="../assets/series.css">
 <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 16 16%22><text y=%2213%22 font-size=%2213%22>&#127922;</text></svg>">
@@ -39,9 +45,9 @@
 
 <div class="note">
   <span class="tag">Companion document</span>
-  <p>The construction itself is documented separately in <a href="standard.html">Dice to seed</a>:
-  the shared recipe, which other Bitcoin projects implement it, and what imperfect dice actually
-  cost. This page covers only SeedSigner's implementation.</p>
+  <p>The methods themselves are cataloged separately in <a href="standard.html">Dice to seed</a>:
+  every dice-to-seed method found across the ecosystem, which implementation uses which, and what
+  imperfect dice actually cost. This page covers only SeedSigner's implementation.</p>
 </div>
 
 <nav class="toc">
@@ -77,8 +83,9 @@ lines, which is a good sign.</p>
 </figure>
 
 <p>The digits are hashed <strong>as text</strong>, not converted to base 6, not reduced to
-bits. For a 12-word seed only the first 128 bits of the hash are used. This is the shared
-construction described in the <a href="standard.html">companion document</a>.</p>
+bits. For a 12-word seed only the first 128 bits of the hash are used. This is the most widely
+implemented of the methods cataloged in the
+<a href="standard.html#hash">companion document</a>.</p>
 
 <h3 id="the-roll-count-is-fixed-on-purpose"><a class="anchor" href="#the-roll-count-is-fixed-on-purpose">The roll count is fixed on purpose</a></h3>
 <p><span class="tag">Verified</span> The entry view passes
@@ -97,7 +104,7 @@ die so defective you would replace it.</p>
 <p>Claiming &ldquo;no random number generator is involved&rdquo; from reading code is an
 inference. It was also demonstrated: the shipped function was run with <code>hashlib.sha256</code>
 instrumented to log every construction and update, and with trip-wires on <code>os.urandom</code>,
-<code>secrets</code> and <code>random</code>.</p>
+<code>secrets</code>, and <code>random</code>.</p>
 
 <pre><code>input                            : 99 ASCII digits
 RNG calls DURING seed generation : 0
@@ -159,11 +166,11 @@ coincidental agreement.</p>
     commit <code>3238f6fd</code></a> and run: <strong>4,000 random roll sequences produced zero
     mismatches</strong>, alongside both published vectors.</li>
   <li><strong>Read from source.</strong> Krux, Kern, Seed Tool, Gordian seedtool-cli and
-    iancoleman.io (Hex or Base 10 mode) were confirmed to implement the identical construction,
+    iancoleman.io (Hex, or Base 10 mode) were confirmed to implement the identical construction,
     but were not executed here.</li>
 </ul>
 <p>Independently written projects produce the same seed from the same rolls. The
-<a href="standard.html#implementations">companion document</a> covers them in detail.</p>
+<a href="standard.html#methods">companion document</a> charts them against every other method in use.</p>
 
 <h2 id="results"><a class="anchor" href="#results"><span class="num">3</span>Results</a></h2>
 
@@ -203,7 +210,7 @@ Every release since produces identical seeds from identical rolls.</p>
 only. 24-word results are identical from 0.4.6 onward, 12-word from 0.5.0.</figcaption>
 </figure>
 
-<h3 id="what-changed-and-why"><a class="anchor" href="#what-changed-and-why">What changed, and why</a></h3>
+<h3 id="what-changed-and-why"><a class="anchor" href="#what-changed-and-why">What changed and why</a></h3>
 <div class="tablewrap">
 <table>
   <thead><tr><th>Commit</th><th>Date</th><th>Stated rationale</th><th>Effect on the seed</th></tr></thead>
@@ -218,7 +225,7 @@ only. 24-word results are identical from 0.4.6 onward, 12-word from 0.5.0.</figc
 </table>
 </div>
 
-<p class="pull">The churn stopped the same week known-answer tests were added, and the
+<p class="pull">The churn stopped the same week known-answer tests were added and the
 construction has not moved since.</p>
 
 <p>The direction of travel is legible from the commit messages. The base-6 approach worked but was
@@ -231,7 +238,7 @@ vectors landed.</p>
 <div class="note warn">
   <span class="tag">If you kept old roll numbers</span>
   <p>Re-entering old rolls on a current release will not give you back your original seed. Every
-  release since <code>0.4.6</code> hashes the digits exactly as you rolled them, and the earlier
+  release since <code>0.4.6</code> hashes the digits exactly as you rolled them and the earlier
   releases did not.</p>
   <p><strong>The rolls are still a route back.</strong> Every construction in the table above is a
   deterministic function of the digits you entered, so an old seed can be recovered off-device using
@@ -239,12 +246,14 @@ vectors landed.</p>
   <ul>
     <li><strong>0.4.5</strong> hashed the rolls with every <code>6</code> recorded as <code>0</code>,
     then used the full digest for 24 words. That is the same convention the
-    <a href="standard.html#addendum">companion document's addendum</a> describes, and
+    <a href="standard.html#remap">companion document's &sect;9</a> describes, and
     <a href="evidence/verify_constructions.py"><code>verify_constructions.py</code></a> in this
     repository already implements it.</li>
     <li><strong>0.4.4 and earlier</strong> read the digits as a base-6 number and took 32 bytes
-    little-endian, again with <code>6</code> recorded as <code>0</code>. No shipping tool does this,
-    but the formula is in the table above. Before <code>0.4.4</code>, a word substitution zeroed
+    little-endian, again with <code>6</code> recorded as <code>0</code>. No shipping tool reproduces
+    that exact combination, though base-6 parsing as such is
+    <a href="standard.html#base6">a method in its own right</a>, and the formula is in the table
+    above. Before <code>0.4.4</code>, a word substitution zeroed
     three entropy bits on top of that.</li>
   </ul>
   <p>Your written words remain the primary backup and are unaffected. Treat this as the route back
@@ -269,7 +278,7 @@ paths. Given the history above, that coverage is doing real work.</p>
 <h2 id="degenerate"><a class="anchor" href="#degenerate"><span class="num">5</span>Degenerate cases</a></h2>
 
 <h3 id="typing-the-same-digit-fifty-times"><a class="anchor" href="#typing-the-same-digit-fifty-times">Typing the same digit fifty times</a></h3>
-<p>SeedSigner accepts it. Entering <code>5</code> fifty times produces a seed, and no guard
+<p>SeedSigner accepts it. Entering <code>5</code> fifty times produces a seed and no guard
 objects.</p>
 <p><span class="tag">Inferred</span> Rated low because it is user-caused and user-visible: it
 requires actively deciding to type one digit repeatedly instead of rolling a die, which defeats
@@ -279,10 +288,10 @@ silently producing weak entropy.</p>
 check passes <code>123123123&hellip;</code>, three distinct faces, about 7 bits of real
 randomness, while rejecting a two-faces-only sequence that genuinely carries 99 bits. The
 dangerous property is <em>repetition</em>, not low variety. The
-<a href="standard.html#guards">companion document</a> covers what does work, and where those
+<a href="standard.html#guards">companion document</a> covers what does work and where those
 guards fall short.</p>
 
-<h3 id="stopping-early-or-adding-extra-rolls"><a class="anchor" href="#stopping-early-or-adding-extra-rolls">Stopping early, or adding extra rolls</a></h3>
+<h3 id="stopping-early-or-adding-extra-rolls"><a class="anchor" href="#stopping-early-or-adding-extra-rolls">Stopping early or adding extra rolls</a></h3>
 <p><span class="tag">Verified</span> Neither is possible. <code>return_after_n_chars</code>
 returns only on exactly 50 or 99 entries. The back button exits the flow without producing a seed.</p>
 
@@ -329,7 +338,7 @@ predate them.</p>
 <h3 id="s-4-99-rolls-may-not-be-enough-entropy"><a class="anchor" href="#s-4-99-rolls-may-not-be-enough-entropy">4. 99 rolls may not be enough entropy</a></h3>
 <p>99 rolls yield 255.9 bits against a 256-bit seed. Extra rolls overshoot what the seed can hold.</p>
 <p class="weak"><strong>Weakest point:</strong> the bit arithmetic assumes SHA-256 behaves as an
-ideal randomness extractor. Standard practice, and the margins are far too large for the
+ideal randomness extractor. Standard practice and the margins are far too large for the
 difference to matter, but it is an assumption rather than a proof.</p>
 
 <h3 id="s-5-seedsigner-may-diverge-from-other-implementations"><a class="anchor" href="#s-5-seedsigner-may-diverge-from-other-implementations">5. SeedSigner may diverge from other implementations</a></h3>
@@ -339,11 +348,14 @@ others were confirmed by reading source, which is weaker evidence, and all were 
 current revisions rather than at the versions any given user is running.</p>
 
 <h3 id="s-6-imperfect-dice-weaken-the-seed"><a class="anchor" href="#s-6-imperfect-dice-weaken-the-seed">6. Imperfect dice weaken the seed</a></h3>
-<p>Addressed quantitatively in the <a href="standard.html#quality">companion document</a>: a
-realistically bad die costs about 11 bits of 256.</p>
-<p class="weak"><strong>Weakest point:</strong> min-entropy figures assume the attacker knows the
-die's bias exactly. That is deliberately conservative, but the modeling of what a
-&ldquo;realistically bad&rdquo; die looks like is an assumption, not a measurement of real dice.</p>
+<p>Addressed quantitatively in the <a href="standard.html#measured">companion document</a>, and
+now against measured dice rather than modeled ones. Two published experiments, one per-face over
+315,672 rolls and one covering 58 individually tested cheap dice, both land near 1.4% on the worst
+face. Working from a conservative 2%, that costs a 24-word seed under <strong>3 bits of 256</strong>
+and a 12-word seed 0.2 bits.</p>
+<p class="weak"><strong>Weakest point:</strong> only one of the two is per-face and its figures are
+pooled across twelve dice, so how far one die strays from another is not established. The more
+severe rows in the companion's ladder remain modeled rather than measured.</p>
 
 <h2 id="limits"><a class="anchor" href="#limits"><span class="num">7</span>What we did not verify</a></h2>
 
@@ -391,13 +403,13 @@ Both need <code>pip install mnemonic embit==0.8.0</code> in a virtual environmen
   github.com/SeedSigner/seedsigner at tag 0.8.7, function <code>generate_mnemonic_from_dice</code>.</p>
   <p>1. How do dice rolls become seed entropy, hashed as text, or converted numerically?<br>
   2. Reproduce the two worked examples in <code>docs/dice_verification.md</code>
-  <strong>without using the project's own code</strong>: implement BIP-39 from the specification,
+  <strong>without using the project's own code</strong>: implement BIP-39 from the specification
   and separately cross-check with Trezor's <code>python-mnemonic</code>.<br>
   3. Validate your from-scratch implementation against the official BIP-39 vectors first.<br>
   4. Walk the git history across every release tag. Has the dice construction ever changed? If so,
   when, and would the same rolls produce a different seed?<br>
   5. Instrument <code>hashlib.sha256</code> and trip-wire <code>os.urandom</code>,
-  <code>secrets</code> and <code>random</code>, then run the function. What is called, and when?</p>
+  <code>secrets</code>, and <code>random</code>, then run the function. What is called and when?</p>
 </div>
 <p>Tell it explicitly <strong>not</strong> to evaluate the result by testing whether the output
 looks random. Hashing anything produces output that passes randomness tests, including a hash of a
@@ -430,14 +442,14 @@ environment.</p>
   <div><dt>Reviewed</dt><dd>Tag <code>0.8.7</code> = <code>e0a80d4b</code>; every tag walked for history</dd></div>
   <div><dt>Executed against</dt><dd><code>python-mnemonic</code>, <code>embit</code> 0.8.0, a from-scratch BIP-39 implementation, the official BIP-39 vectors, and Coldcard's transcribed construction</dd></div>
   <div><dt>Source-read only</dt><dd>Krux, Kern, Seed Tool, Gordian seedtool-cli, iancoleman.io</dd></div>
-  <div><dt>Human direction</dt><dd>Scope, the ecosystem survey and the full-history review were directed by SeedSigner's lead developer. Several conclusions were revised in response to challenges.</dd></div>
+  <div><dt>Human direction</dt><dd>Scope, the ecosystem survey, and the full-history review were directed by SeedSigner's lead developer. Several conclusions were revised in response to challenges.</dd></div>
   <div><dt>What it is not</dt><dd>An audit. No independent engagement, no certification.</dd></div>
 </dl>
 
 <h3 id="traps-claims-that-look-right-and-are-not"><a class="anchor" href="#traps-claims-that-look-right-and-are-not">Traps, claims that look right and are not</a></h3>
 <p>Findings here went to fresh agents instructed to refute them. Each of the following survived a
 first reading and turned out to be false. They are recorded because a reviewer working the same
-sources will meet the same traps, and because corrections made after publication will be listed
+sources will meet the same traps and because corrections made after publication will be listed
 here too.</p>
 <div class="tablewrap">
 <table>

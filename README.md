@@ -19,7 +19,14 @@ line or a measurement, and every document records what it could not verify.
 | Analysis | Subject | Reviewed | Status |
 |---|---|---|---|
 | [`image-entropy/`](image-entropy/) | Turning a photograph into a seed phrase | 0.8.7 | Published |
-| `dice/` | Turning dice rolls into a seed phrase | 0.8.7 | Coming soon |
+| [`dice/`](dice/) | SeedSigner's dice path, and every release since 2020 | 0.8.7 | Published |
+| [`dice/standard.html`](dice/standard.html) | Every dice-to-seed method Bitcoin wallets use | 17 implementations | Published |
+| [`word-picking/`](word-picking/) | Building a seed by drawing BIP-39 words | — | Work in progress |
+
+The dice pair is one subject in two documents: `dice/standard.html` is the cross-ecosystem
+reference, covering five methods and which implementation uses which, and `dice/index.html` is the
+SeedSigner analysis that checks its own path against that standard. `word-picking/` is published
+deliberately incomplete and says so at the top.
 
 Format and evidentiary rules: **[CONVENTIONS.md](CONVENTIONS.md)**.
 
@@ -35,7 +42,8 @@ assets/          fonts.css (SS Sans / SS Mono) + series.css — shared, cached a
 index.html       series landing page
 CONVENTIONS.md   document structure, evidentiary rules, deployment reality
 <analysis>/
-  index.html     the document (image-entropy also has evidence.html, the AI-first half)
+  index.html     the document (image-entropy also has evidence.html, the AI-first half;
+                 dice also has standard.html, the cross-ecosystem reference)
   figures/       plates, as files
   evidence/      supporting detail behind the published claims
   dataN/         raw measurement inputs by capture round, each with a RUNS.md manifest

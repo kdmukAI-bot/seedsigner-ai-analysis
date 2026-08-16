@@ -1,4 +1,4 @@
-"""Evaluate the 'shake ten dice in a box, read left to right' recommendation.
+"""Evaluate the 'shake a handful of dice in a box, read left to right' recommendation.
 
 The claim to test: does drawing each roll from a POOL of dice improve entropy
 compared with rolling one die repeatedly?
@@ -20,23 +20,31 @@ def random_biased_die(severity, rng):
 
 rng = random.Random(20260731)
 TRIALS = 4000
+POOLS = tuple(range(1, 11))
 
 print("=" * 78)
-print("TEN DICE IN A BOX vs ONE DIE, ROLLED REPEATEDLY")
-print("min-entropy per roll; a fair die = 2.585 bits")
+print("HOW MANY DICE IN THE BOX?  min-entropy per roll; a fair die = 2.585 bits")
+print("Each trial draws 10 idiosyncratically biased dice; a pool of n uses the first n,")
+print("so the columns are the same dice, not independent redraws. n=1 is one die rolled")
+print("repeatedly.")
 print("=" * 78)
-print(f"{'dice quality':<26}{'single die':>14}{'pool of 10':>14}{'bits regained':>16}")
-print("-" * 78)
+print(f"{'worst face':<14}" + "".join(f"{n:>7}" for n in POOLS) + f"{'gain':>8}")
+print("-" * 92)
 
-for severity, label in ((0.05,"very good"),(0.15,"ordinary"),(0.30,"poor"),(0.50,"bad")):
-    singles, pools = [], []
+# Severities are quoted by the unfairness they produce (mean excess of the worst face over
+# 1/6), so the tiers can be compared with the measured dice: Labby 2009 gives 1.3%, and the
+# published document works from a conservative 2%.
+for severity, label in ((0.015,"2% unfair"),(0.05,"6% unfair"),
+                        (0.10,"13% unfair"),(0.20,"26% unfair")):
+    totals = {n: 0.0 for n in POOLS}
     for _ in range(TRIALS):
         dice = [random_biased_die(severity, rng) for _ in range(10)]
-        singles.append(min_ent(dice[0]))                     # roll die #1 repeatedly
-        mix = [sum(d[f] for d in dice) / 10 for f in range(6)]
-        pools.append(min_ent(mix))                            # read from the pool
-    s, p = sum(singles)/TRIALS, sum(pools)/TRIALS
-    print(f"{label:<26}{s:>14.3f}{p:>14.3f}{p-s:>16.3f}")
+        for n in POOLS:
+            mix = [sum(d[f] for d in dice[:n]) / n for f in range(6)]
+            totals[n] += min_ent(mix)
+    means = {n: totals[n] / TRIALS for n in POOLS}
+    print(f"{label:<14}" + "".join(f"{means[n]:>7.3f}" for n in POOLS)
+          + f"{means[10]-means[1]:>8.3f}")
 
 print("\n" + "=" * 78)
 print("THE CASE IT DOES NOT HELP: a whole batch sharing one systematic defect")
@@ -53,7 +61,7 @@ print("  one bag, sharing a manufacturing defect, average to the same defect.")
 print("\n" + "=" * 78)
 print("TOTAL SEED STRENGTH, ordinary-quality dice")
 print("=" * 78)
-sev = 0.15
+sev = 0.05
 singles, pools = [], []
 for _ in range(TRIALS):
     dice = [random_biased_die(sev, rng) for _ in range(10)]

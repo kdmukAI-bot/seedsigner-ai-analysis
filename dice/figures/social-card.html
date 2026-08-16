@@ -1,0 +1,109 @@
+<!doctype html>
+<!-- Source for social-card.jpg (1200x630). Rendered headless; see README in this directory.
+     Pinned to the light theme so the capture does not depend on the renderer's color-scheme
+     default. Everything here is the page's own type and tokens: no separate card design. -->
+<html lang="en" data-theme="light">
+<head>
+<meta charset="utf-8">
+<title>Dice to seed — social card</title>
+<script>
+  /* Append ?theme=dark to render the dark variant from this same file. Both cards come from one
+     source so they cannot drift apart; the attribute above is the default when opened directly. */
+  document.documentElement.setAttribute('data-theme',
+    new URLSearchParams(location.search).get('theme') === 'dark' ? 'dark' : 'light');
+</script>
+<link rel="stylesheet" href="../../assets/fonts.css">
+<link rel="stylesheet" href="../../assets/series.css">
+<style>
+  html,body{margin:0;padding:0;background:var(--ground)}
+  /* Grid rather than space-between: the middle row absorbs the slack, so the flow sits centered
+     in the leftover space instead of leaving a hole under the standfirst. */
+  body{width:1200px;height:630px;overflow:hidden;font-family:var(--sans);color:var(--ink);
+    display:grid;grid-template-rows:auto 1fr auto;
+    padding:52px 60px 46px;box-sizing:border-box;position:relative}
+  /* A single accent hairline down the left edge: the series uses the accent structurally. */
+  body::before{content:"";position:absolute;left:0;top:0;bottom:0;width:8px;background:var(--accent)}
+
+  .eyebrow{font-family:var(--mono);font-size:19px;letter-spacing:.13em;text-transform:uppercase;
+    color:var(--muted);margin:0 0 14px}
+  h1{font-family:var(--sans);font-size:76px;line-height:.98;letter-spacing:-.02em;
+    font-weight:650;margin:0 0 15px}
+  .sub{font-size:27px;line-height:1.34;color:var(--muted);margin:0;max-width:36ch}
+
+  /* The transformation, compressed to three beats. Every beat's content sits in one fixed-height
+     band and is centered in it, so the three uppercase labels land on a single baseline and the
+     arrows land on the content's optical center. Sizing each beat to its own content instead
+     leaves the labels ragged and the arrows floating above the dice. */
+  .flowcard{display:flex;align-items:start;gap:32px;align-self:center;width:100%}
+  .beat{display:flex;flex-direction:column;gap:14px}
+  .bc{height:120px;display:flex;align-items:center}
+  .blabel{font-family:var(--mono);font-size:19px;letter-spacing:.11em;text-transform:uppercase;
+    color:var(--faint)}
+  .arrow{font-family:var(--mono);font-size:40px;color:var(--muted);line-height:1;
+    height:120px;display:flex;align-items:center}
+
+  .dice{display:flex;gap:12px;color:var(--accent)}
+  .hash{font-family:var(--mono);font-size:20px;line-height:1.55;color:var(--accent-ink);
+    background:var(--raised);border:1px solid var(--rule);padding:13px 15px;width:288px;
+    word-break:break-all}
+  .chips{display:grid;grid-template-columns:repeat(3,auto);gap:9px}
+  .chip{font-size:23px;background:var(--surface);border:1px solid var(--rule-strong);
+    padding:6px 12px 6px 8px;display:inline-flex;align-items:baseline;gap:7px;white-space:nowrap}
+  .chip i{font-family:var(--mono);font-size:15px;color:var(--faint);font-style:normal;
+    min-width:19px;text-align:right}
+  .chip.more{color:var(--faint);border-style:dashed;justify-content:center}
+
+  .foot{display:flex;justify-content:space-between;align-items:baseline;
+    border-top:1px solid var(--rule);padding-top:17px;font-family:var(--mono);font-size:19px;
+    color:var(--muted)}
+  .foot b{font-weight:400;color:var(--faint)}
+</style>
+</head>
+<body>
+
+<header>
+  <p class="eyebrow">SeedSigner AI Analysis &middot; Reference</p>
+  <h1>Dice to seed</h1>
+  <p class="sub">Every method Bitcoin wallets use to turn dice rolls into a recovery phrase.</p>
+</header>
+
+<div class="flowcard">
+  <div class="beat">
+    <div class="bc"><div class="dice">
+      <svg viewBox="0 0 100 100" width="56" height="56"><rect x="4" y="4" width="92" height="92" rx="18" fill="none" stroke="currentColor" stroke-width="6"/><circle cx="28" cy="26" r="8.5" fill="currentColor"/><circle cx="72" cy="26" r="8.5" fill="currentColor"/><circle cx="28" cy="50" r="8.5" fill="currentColor"/><circle cx="72" cy="50" r="8.5" fill="currentColor"/><circle cx="28" cy="74" r="8.5" fill="currentColor"/><circle cx="72" cy="74" r="8.5" fill="currentColor"/></svg>
+      <svg viewBox="0 0 100 100" width="56" height="56"><rect x="4" y="4" width="92" height="92" rx="18" fill="none" stroke="currentColor" stroke-width="6"/><circle cx="28" cy="28" r="8.5" fill="currentColor"/><circle cx="72" cy="28" r="8.5" fill="currentColor"/><circle cx="50" cy="50" r="8.5" fill="currentColor"/><circle cx="28" cy="72" r="8.5" fill="currentColor"/><circle cx="72" cy="72" r="8.5" fill="currentColor"/></svg>
+      <svg viewBox="0 0 100 100" width="56" height="56"><rect x="4" y="4" width="92" height="92" rx="18" fill="none" stroke="currentColor" stroke-width="6"/><circle cx="50" cy="50" r="8.5" fill="currentColor"/></svg>
+      <svg viewBox="0 0 100 100" width="56" height="56"><rect x="4" y="4" width="92" height="92" rx="18" fill="none" stroke="currentColor" stroke-width="6"/><circle cx="28" cy="28" r="8.5" fill="currentColor"/><circle cx="72" cy="72" r="8.5" fill="currentColor"/></svg>
+    </div></div>
+    <span class="blabel">99 rolls</span>
+  </div>
+
+  <span class="arrow">&rarr;</span>
+
+  <div class="beat">
+    <div class="bc"><div class="hash">51531761ec7a738946e0b9f46bb11320a695&hellip;</div></div>
+    <span class="blabel">One SHA-256</span>
+  </div>
+
+  <span class="arrow">&rarr;</span>
+
+  <div class="beat">
+    <div class="bc"><div class="chips">
+      <span class="chip"><i>1</i>eyebrow</span>
+      <span class="chip"><i>2</i>obvious</span>
+      <span class="chip"><i>3</i>such</span>
+      <span class="chip"><i>4</i>suggest</span>
+      <span class="chip more">&hellip;</span>
+      <span class="chip"><i>24</i>radio</span>
+    </div></div>
+    <span class="blabel">24 words</span>
+  </div>
+</div>
+
+<div class="foot">
+  <span>17 implementations &middot; 5 methods &middot; source-read</span>
+  <span><b>kdmukai-bot.github.io/</b>seedsigner-ai-analysis</span>
+</div>
+
+</body>
+</html>

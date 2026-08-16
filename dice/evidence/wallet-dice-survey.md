@@ -1,6 +1,6 @@
 # Survey: Dice-Roll Entropy Implementations Across Bitcoin Wallets
 
-**Date:** 2026-08-03, substantially revised 2026-08-04
+**Date:** 2026-08-03, substantially revised 2026-08-04, extended 2026-08-11
 **Method:** All findings below are read directly from public source code fetched from GitHub (`raw.githubusercontent.com` + GitHub code search). No claims are taken from documentation or marketing except where explicitly labeled. Each repo is pinned to the HEAD commit fetched on the survey date; line numbers refer to those commits.
 
 > **Revision note (2026-08-04).** The original section 8 of this survey concluded that BitBox02,
@@ -16,6 +16,23 @@
 >
 > Sections 1 to 7 were re-checked and stand. Section 8 is replaced by sections 8 to 11 below, which
 > use a four-way taxonomy instead of a yes/no test.
+
+> **Extension note (2026-08-11).** The published document moved from a four-way class taxonomy to a
+> per-method chart, because several implementations occupy more than one class at once and a single
+> letter could not say so. Nothing in sections 1 to 12 was overturned. What this pass added:
+>
+> 1. **Kern** was classified from source but never written up. Section 13 does that, at tag `0.0.15`.
+> 2. **The final-word affordance is far more common than class (c) implied.** All four devices that
+>    implement the reference construction, SeedSigner, Coldcard, Krux and Kern, also restrict the
+>    last word of a typed-in phrase to checksum-valid choices. Verified from source in each case,
+>    section 14. The paper-table method therefore works on devices whose vendors never mention it,
+>    which is why the chart separates *completes a hand-built phrase* from *vendor publishes a dice
+>    worksheet*.
+> 3. **SeedSigner's coin-flip path and Calc Final Word tool** were not covered before. Section 14.
+> 4. **Jade's dice guide has been retrieved**, so the rolls-per-word scheme is no longer unverified.
+>    Section 15, and the "Not fully verified" entry is retired.
+> 5. **Sparrow and Specter DIY move out of the class (d) summary row**, where they were still listed
+>    despite sections 11 and 12 placing them elsewhere.
 
 ## Taxonomy used from the revision onward
 
@@ -150,6 +167,39 @@ async def add_dice_rolls(count, seed, judge_them, nwords=None, enforce=False):
 ```
 
 **Roll-count policy:** threshold 50 (12w) / 99 (24w). In the new-seed flow (`enforce=True`) too-few rolls forces "add more or exit"; in the ephemeral-seed flow the user may confirm past the warning (lines 434-449).
+
+**Historical defect, now fixed (added 2026-08-11).** Roll-count enforcement and the distribution
+check both arrive in commit `2bbe27fa52e940bfef2a0a42b290c23e2d93b6db` (2023-01-20), *"add dice
+rolls distribution check and enforce it in case of main seed generation, enforce number of dice
+rolls for main seed generation"*. Before it, `add_dice_rolls` had no `nwords`/`enforce` parameters
+and the count was advisory in every flow:
+
+```python
+        elif ch == 'y':
+            if count < 99 and judge_them:
+                if not count:
+                    return 0, seed
+                ok = await ux_confirm('''You only provided %d dice rolls, ...''' % count)
+                if not ok: continue
+```
+
+The only refusal is `if not count` (zero rolls), so **a single roll could be confirmed into a
+seed**. Verified present in the original dice commit `7878c4815` (2019-07-03), so the
+window runs from the feature's introduction to January 2023, roughly three and a half years.
+
+**And enforcement is path-specific even after the fix.** `enforce=True` is passed only on the
+main seed-generation flow; the ephemeral-seed flow still shows the warning and lets the user
+confirm past it. Independent corroboration: Crypto Guide, *"Cracking Unsafe Bitcoin Wallets +
+Coldcard Mk4 Warning (Insecure Dice Based Seeds & Private Keys)"*, 2023-10-31,
+`https://youtu.be/oj_W3xOlt6U?t=328` (channel `@CryptoGuide`, 598 s). Its description states the
+video searches the chain for wallets "likely created using low numbers of dicerolls", reports funds
+lost, and demos "how this can still happen with Coldcard Mk4, even running the latest firmware";
+chapter markers include "03:51 Ongoing risk for low numbers of dice rolls" and "05:15 Coldcard Mk4
+Issues & Warning". **Sourcing note:** title, channel, upload date, description and chapter list were
+read from the video page metadata. The demonstration itself was not verified here, because YouTube's
+caption endpoint returns empty without a token, so the on-screen claims are attributed rather than
+checked. This
+parallels Keystone's missing 24-word gate (section 8) and is the same class of defect.
 
 **Bias guard** (lines 451-455):
 
@@ -575,14 +625,14 @@ Guard: `modules/utils.py:1554` `insufficient_randomness()` warns if any word rep
 - **KeepKey** (`keepkey/keepkey-firmware` @ tag `v7.14.1` = `5482e7366a36e81336074f53a9defb6cff45ed72`): a Trezor fork with the same formula, `lib/firmware/reset.c:86,139-143`. Zero `dice` hits in the whole tree and across all refs' commit messages; all **67** GitHub releases swept, no matches. One difference worth recording: `fsm_msgLoadDevice` is **not** debug-gated (`lib/firmware/fsm_msg_common.h:502-528`), so production firmware will accept an arbitrary host-supplied mnemonic, making the manual route easier than on Trezor.
 - **OneKey** (`OneKeyHQ/firmware` @ `e99ba63809cd175d86649c9a3bfe75f4ff7952c2`): a Trezor fork that did **not** add a dice path; seed creation is the unmodified `reset_device` flow. Grep for `user_entropy|custom_entropy|manual_entropy|external_entropy` across all firmware source returns zero, as does a sweep of 5 non-default branches and all 9 CHANGELOGs. Its **"Use multiple sources of entropy"** advanced option is *two silicon RNGs* (MCU TRNG plus secure element), not user input. Two traps: OneKey's marketing describes its TRNG as *"a dice-rolling machine kept in a safe"*, and `bip39.onekey.so` is a **fork of iancoleman's tool** (per its `package.json` repository field) that does have dice input, but it is a web page, not the wallet.
 - **Electrum** (`spesmilo/electrum` @ `b1aa52d`): no dice; `make_seed` (`electrum/mnemonic.py:201`) draws only from `secrets.randbelow`, and `extra_entropy` appears **zero** times in the tree. Electrum also cannot *generate* a BIP-39 seed at all, only import one. **Live caveat:** lead maintainer SomberNight wrote PR **#8839** *"mnemonic.make_seed: add 'extra_entropy' arg"* (2024-01-22, body explicitly contemplating dice), confirmed via API as `state: open, merged: false`, untouched since 2024-04-08. A custom-entropy option existed historically and was removed twice (`e0c38b31`, then `5e5134b7` around v3.1.2). If #8839 merges, Electrum becomes class (b), never (a), since the input would be XOR-mixed with OS randomness.
-- **Sparrow** (`sparrowwallet/sparrow` @ tag `2.5.3` = `0dce4783ef463c9985fd4ff814280209545bebc3`): no dice. `MnemonicKeystoreEntryPane.generateNew():57-70` uses `SecureRandom.getInstanceStrong()` only. Maintainer craigraw declined the feature in [sparrow#1351](https://github.com/sparrowwallet/sparrow/issues/1351): *"I don't think adding such features to Sparrow would be a net positive - indeed the reverse."* Two near-misses to not mistake for dice: `CardImportPane.java:203-226` has a user-entropy text box, but it is **SHA-256d** and becomes the *chain code* for Tapsigner/Satochip/Keycard setup, producing no mnemonic; and **Border Wallets** (`MnemonicGridDialog`) is a memorability scheme whose grid shuffle comes from machine RNG.
+- **Sparrow** (`sparrowwallet/sparrow` @ tag `2.5.3` = `0dce4783ef463c9985fd4ff814280209545bebc3`): no dice. `MnemonicKeystoreEntryPane.generateNew():57-70` uses `SecureRandom.getInstanceStrong()` only. Maintainer craigraw declined the feature in [sparrow#1351](https://github.com/sparrowwallet/sparrow/issues/1351): *"I don't think adding such features to Sparrow would be a net positive - indeed the reverse."* Two near-misses to not mistake for dice: `CardImportPane.java:203-226` has a user-entropy text box, but it is **SHA-256d** and becomes the *chain code* for Tapsigner/Satochip/Keycard setup, producing no mnemonic; and **Border Wallets** (`MnemonicGridDialog`) is a memorability scheme whose grid shuffle comes from machine RNG. **Reclassified to (c)**: the reading above is about dice *arithmetic*, of which there is none, but the checksum-valid final-word autosuggest on the seed-entry path is the class (c) affordance. See the summary table.
 - **Nunchuk** (`libnunchuk` @ `f5d0acc`): no dice. `SoftwareSigner::GenerateMnemonic` (`src/softwaresigner.cpp:67-69`) calls trezor-crypto's `mnemonic_generate`, verified at submodule SHA `b957dfbddb4222c5f9e573f3d4dc21fcbc6ff3a9` to be `random_buffer(data, 32)`. The public API has no entropy parameter. Same Tapsigner chain-code near-miss as Sparrow. **`nunchuk-io/nunchuk-ios` returns 404, so the iOS app is closed source**; that platform is inference from the shared core.
 - **Liana** (`wizardsardine/liana` @ tag `v15.0` = `4684d5cb0c75471ae40f43dffc78333ac74afb38`): no dice. `liana/src/signer.rs:116-121` uses `random::random_bytes()` (RDRAND + `getrandom` + contextual data, SHA-256 mixed); no user-input path in library, CLI or GUI. Decisively, Wizardsardine's own [Coldcard RNG advisory](https://wizardsardine.com/blog/coldcard-rng-vulnerability/) (2026-08-01) tells users to *"generate a new seed with dice on the Coldcard(s)"*, framing dice as a Coldcard capability.
 - **Bitcoin Core** (@ tag `v31.1` = `9be056a8a72b624dae9623b2f7bded92c2a21c91`): a *structural* no. `grep -rniI "bip39\|mnemonic"` over the whole repo returns **0** — Core does not implement BIP-39 in any form, so there is no seed for dice to feed. `sethdseed`, the last RPC accepting user-chosen key material, was removed with legacy wallets in v30.0.
 - **Wasabi** (`WalletWasabi/WalletWasabi` @ `27e6e7c860461cd98df4123e8c06e0d159382d63`): no dice. `KeyManager.cs:205` uses NBitcoin's CSPRNG constructor. Two traps: Wasabi's docs *do* teach dice, but for the **Diceware passphrase**, not the seed; and Wasabi says "entropy" constantly in the coinjoin-privacy sense. Requested and never built: #3720 (closed 2023 with no PR) and **#14901, opened 2026-08-04** with no maintainer response.
 - **Blockstream Green** (`green_qt` @ `5aaf284ba54ad04221ed0935243f5a16d189bb0d`): no dice, provable at the API level. GDK's public header declares `GDK_API int GA_generate_mnemonic(char** output);` — **output pointer only, no input parameter**, so no caller can supply entropy, and "entropy" appears zero times in `gdk.h`. Blockstream's dice article is for **Jade the device** (section 11), not the app.
 - **Bull Bitcoin mobile** (`SatoshiPortal/bullbitcoin-mobile` @ `33a1ff1`): no dice feature found (hits are Italian localization — "dice" means "says" in Italian — and BIP85 tables).
-- **Specter DIY** (`cryptoadvance/specter-diy` @ tag `v1.10.4` = `fa7d46d72ccc4fe3912d74ceb99358f13c3609ea`): no dice, and the documented feature is **coin flips**, not dice. `grep -c dice` over the entire tree is **0**; the product page says *"Added Entropy — Use coin-flips to introduce extra randomness to key generation."* The 11-bit toggle keypad (`src/gui/screens/mnemonic.py:93`, place-values 1…1024) lets a user set any word's bits by hand with checksum auto-fix (`helpers.py:27-30`). Three precision points: there is **no XOR anywhere in the mnemonic path** (the maintainer's "XOR" is arithmetic the user does on paper), the toggled bits become entropy **directly and unhashed**, and **untouched words remain TRNG output** with no accounting. Secondary sources claiming Specter DIY takes dice input on-device are conflating coin flips with dice.
+- **Specter DIY** (`cryptoadvance/specter-diy` @ tag `v1.10.4` = `fa7d46d72ccc4fe3912d74ceb99358f13c3609ea`): no dice, and the documented feature is **coin flips**, not dice. `grep -c dice` over the entire tree is **0**; the product page says *"Added Entropy — Use coin-flips to introduce extra randomness to key generation."* The 11-bit toggle keypad (`src/gui/screens/mnemonic.py:93`, place-values 1…1024) lets a user set any word's bits by hand with checksum auto-fix (`helpers.py:27-30`). Three precision points: there is **no XOR anywhere in the mnemonic path** (the maintainer's "XOR" is arithmetic the user does on paper), the toggled bits become entropy **directly and unhashed**, and **untouched words remain TRNG output** with no accounting. Secondary sources claiming Specter DIY takes dice input on-device are conflating coin flips with dice. **Reclassified to (c)**: hand-set word bits with checksum auto-fix is the same affordance as class (c), reached with coin flips rather than a dice table, and the untouched-words-stay-TRNG behavior is why the published chart also marks it as blending in the device's own entropy.
 - **Commercial hardware wallets, all class (d), none offering on-device dice or coin entropy:** Bitkey (`@cf16705`, no BIP-39 in the hardware path at all — 32 raw bytes into BIP-32), Cypherock X1 (`@5b11739`), Prokey (`@484d7b2` — note `firmware/reset.c:109-114` *is* a SHA-256→BIP-39 construction, but 32 bytes of device TRNG are unconditionally prepended), Satochip (`@8cbaa1d`, card never generates a seed), SecuX (`@3795a26`), SafePal (`@09ee73c`), ELLIPAL Joy (`@a672896`). Closed firmware, inferred from complete documented flows: Tangem, NGRAVE ZERO (its `zero-firmware` repo is an empty 60-byte placeholder), Ellipal Titan, D'CENT, Arculus (75-article help corpus, zero hits for dice/coin flip/entropy), Ballet (no BIP-39 at all).
 - **Open DIY signers, all class (d):** Portal `@a084b3a`, Bowser `@f0013ea`, Frostsnap `@6030ccb`, catcard `@a8d52b0` (dice explicitly *planned*, `docs/ENTROPY.md:148`), keep-esp32 `@f195c74`.
 
@@ -593,9 +643,98 @@ Guard: `modules/utils.py:1554` `insufficient_randomness()` warns if any word rep
 
 The only method that gets both right is reading the seed-creation path, the release notes, **and** the vendor's own documentation.
 
+## 13. Kern (`odudex/Kern`) — HAS DICE, class (a)
+
+Classified from source when the published document first listed it, but never written up here.
+Verified at tag `0.0.15`, fetched 2026-08-11.
+
+`main/pages/new_mnemonic/dice_rolls.c`:
+
+```c
+#define MIN_ROLLS_12_WORDS 50
+#define MIN_ROLLS_24_WORDS 99
+#define MAX_ROLLS 256
+...
+  if (dice_value >= '1' && dice_value <= '6' && rolls_count < MAX_ROLLS) {
+...
+  if (wally_sha256((const unsigned char *)rolls_string, rolls_count, hash,
+...
+  ret = bip39_mnemonic_from_bytes(NULL, hash, entropy_len, &mnemonic)
+```
+
+- Keypad offers faces `1`-`6` only (`"1","2","3","\n","4","5","6"`), stored as typed, no remap, no
+  delimiter. D6 only; no D20 path, unlike Krux despite the shared author.
+- `wally_sha256` over the roll string, then `entropy_len` of 16 or 32 bytes. Same construction as
+  SeedSigner.
+- **Roll counts are minimums, not exact counts**: `min_rolls = (word_count == 12) ? 50 : 99` and up
+  to `MAX_ROLLS` 256. Rolling past the minimum leaves the published vectors, as with Krux.
+- No statistical guard on the rolls.
+
+**Verdict: EQUIVALENT** at exactly 50 or 99 rolls.
+
+---
+
+## 14. The final-word affordance outside class (c)
+
+Section 11 treated "the device computes the checksum-valid final word" as the defining feature of
+the paper-table class. That was too narrow. The same affordance is present on every class (a) device
+surveyed, where it falls out of ordinary seed entry rather than being built for dice. The difference
+that survives is **documentation**: BitBox02 and Blockstream Jade publish the lookup table the
+method needs, and the others do not.
+
+| Implementation | Where | What it does |
+|---|---|---|
+| **SeedSigner** | `views/tools_views.py` `ToolsCalcFinalWord*` @ `0.8.7` | A dedicated Calc Final Word tool. The user enters 11 or 23 words, then supplies the last word's spare bits (7 bits at 12 words, 3 at 24) one of three ways: `COIN_FLIPS`, `SELECT_WORD` (any BIP-39 word, whose index supplies the bits), or `ZEROS`. The device then replaces the trailing bits with the checksum. |
+| **Coldcard** | `shared/seed.py` `WordNestMenu` L232-261 @ `3238f6fd` | On the last word of a typed-in phrase, offers only `bip39.a2b_words_guess(words)`, i.e. the 8 valid candidates at 24 words and 128 at 12. |
+| **Krux** | `pages/mnemonic_editor.py` L266-273 @ `7ea3f95` | `Key.get_final_word_candidates(...)` constrains autocomplete to checksum-valid words when the last word of a new mnemonic is entered. |
+| **Kern** | `pages/load_mnemonic/manual_input.c` + `new_mnemonic/new_mnemonic_menu.c` L92-94 @ `0.0.15` | `manual_input_page_create(..., checksum_filter_last_word)` is called with `true` from the **New Mnemonic → words** flow; the last word's candidate list is filtered to valid checksums. |
+
+**SeedSigner also has a coin-flip generation path**, not previously recorded here.
+`helpers/mnemonic_generation.py` L85-101 @ `0.8.7`: `generate_mnemonic_from_coin_flips` takes 128 or
+256 characters of `'0'`/`'1'`, hashes the string with SHA-256 and truncates to 16 bytes at 128 flips.
+That is the reference construction over a binary alphabet, matching iancoleman and Seed Tool's
+"Binary" mode, and it is why the chart records coin as well as dice for SeedSigner.
+
+**Scope of this finding.** It was checked on the signing devices, where a seed is generated and the
+question matters. It was **not** established for the software tools and apps, and the published chart
+marks those cells as not established rather than guessing.
+
+---
+
+## 15. Jade's dice guide, retrieved
+
+The 2026-08-04 revision could not read Jade's rolls-per-word scheme because the attachment linked
+from the help article returned 404. The guide is now served from a different host and was fetched on
+2026-08-11:
+
+- `https://storage.googleapis.com/dxp-production-assets/content/blockstream-jade/add-more-security-functionality/create-a-recovery-phrase-using-dice/JadeDiceRollsGuide.pdf`
+- sha256 `5aa832156e75a5bc947b191deca243abd27350d85cd0587dc0c582079fcf64d6`, 17 pages, PDF creation
+  date 2023-02-28.
+
+Verbatim from page 1:
+
+> 1) Acquire (2) 16-sided dice and (1) 8-sided dice.
+> 2) Roll D1, D2, and D3 simultaneously - then use the lookup table to find the corresponding word
+> that matches your results.
+> 3) For example: if D1 rolls a "10", D2 rolls a "9", and D3 rolls an "8" - then your resulting word
+> is ocean.
+> 4) Repeat this process until you have either 11 or 23 words, then use the Calculate feature on
+> Blockstream Jade to choose a valid final word.
+
+The table decodes to `word_index = (D1-1)*128 + (D2-1)*8 + (D3-1)`, covering 16x16x8 = 2048 exactly,
+so there is no rerolling and no coin flip. Independently checked against the canonical BIP-39 English
+wordlist: the guide's own example (10, 9, 8) gives 1223 = `ocean`; (1,1,1) = 0 = `abandon`;
+(1,5,1) = 32 = `advice`; (1,13,1) = 96 = `army`; (16,16,8) = 2047 = `zoo`.
+
+**This is not BitBox02's scheme.** BitBox02 uses five rejection-sampled D6 plus a coin flip per
+word; Jade uses two D16 and one D8 with no rejection step. A transcript from one is meaningless to
+the other. Both arrive at 11 uniform bits per word.
+
+---
+
 ## Not fully verified
 
-- **Jade's dice lookup table:** the guide attachment linked from Blockstream's own dice article returns 404, so Jade's rolls-per-word mapping was never read. Whether it matches BitBox02's scheme is UNVERIFIED.
+- ~~**Jade's dice lookup table**~~ RESOLVED 2026-08-11: the guide was retrieved from its new host and read. See section 15. It does **not** match BitBox02's scheme.
 - **Ledger's BOLOS onboarding code** is closed source and has never been published. The class (d) verdict there is documentation-sourced and cannot be source-verified by anyone outside Ledger.
 - **Nunchuk iOS** (`nunchuk-io/nunchuk-ios`) returns 404; the iOS UI is closed source.
 - **`BlockchainCommons/seedtool.info`** is a WASM build of seedtool-cli; its `docs/index.html` has zero dice occurrences, so all dice behavior lives inside `seedtool.wasm`, which was not disassembled.
@@ -621,6 +760,7 @@ A from-scratch BIP-39 encoder (standard library only, no wallet code) was valida
 | SeedSigner | (a) | SHA256(ASCII '1'-'6'), truncate 16B for 12w | (reference) |
 | Coldcard | (a) | Incremental SHA256 over same ASCII chars; `seed[0:16]` for 12w | **YES** (byte-identical) |
 | Krux | (a) | D6: identical string+SHA256+truncation, via embit; D20: dash-joined | **YES (D6)**; D20 n/a |
+| Kern | (a) | `wally_sha256(ASCII rolls)`, 16/32 bytes; min 50/99, max 256 | **YES** (at exactly 50/99) |
 | AirGap Vault, default mode | (a) | SHA256(raw ASCII rolls); 99 rolls, 24 words only | **YES** |
 | Gordian Seed Tool (iOS) | (a) | SHA256(raw ASCII rolls)`[0:16]`, unconditional; 12 words only | **YES (12w)**; no 24w path |
 | Gordian seedtool-cli | (a) | SHA256(raw ASCII rolls), first N bytes | **YES** (construction) |
@@ -632,4 +772,222 @@ A from-scratch BIP-39 encoder (standard library only, no wallet code) was valida
 | **BitBox02** | **(c)** | Paper table, 5 rejection-sampled dice + coin = 11 bits/word; device solves word 24 | **NO** (no hashing at all) |
 | **Blockstream Jade** | **(c)** | Paper table; device shows checksum-valid final words | **NO** |
 | **Foundation Passport** | **(c)** | Paper table; device *picks* the final word with its own RNG | **NO** |
-| Trezor, Ledger, KeepKey, OneKey, Electrum, Sparrow, Nunchuk, Liana, Wasabi, Green, Bitcoin Core, Specter DIY, Bull Bitcoin, and the commercial and DIY devices listed in §12 | (d) | — | n/a |
+| **Sparrow** | **(c)** | Autosuggests checksum-valid final words on the seed-entry path; Border Wallets grid, no dice screen | **NO** |
+| **Specter DIY** | **(c)** | 11-bit keypad sets any word by hand from coin flips, checksum auto-fixed; untouched words stay TRNG | **NO** |
+| Trezor, Ledger, KeepKey, OneKey, Electrum, Nunchuk, Liana, Wasabi, Green, Bitcoin Core, Bull Bitcoin, and the commercial and DIY devices listed in §12 | (d) | — | n/a |
+- **The final-word affordance on the software tools and apps** (AirGap Vault, both Gordian tools, Seed Tool, iancoleman.io, BlueWallet, RooSoft/bitcoinlib) was not established. Section 14 checked the signing devices only.
+
+## 16. Third-party dice worksheets (not published by any wallet vendor)
+
+Surveyed 2026-08-15. **This is an open set**: anyone can publish a worksheet, so no count is
+claimed and none should be. These are the ones found and checked, not the ones that exist.
+
+Checked against the canonical BIP-39 English wordlist (2048 words, sha256 of the newline-terminated
+list `2f5eed53a4727b4bf8880d8f3f199efc90e58503646d9ff8eff3a2ed3b24dbda`, read from
+`embit/src/embit/wordlists/bip39.py`).
+
+**Depth of check, stated per worksheet.** `dicebip39`, `taelfrinn`, SeedPicker and RudeFox were
+verified **positionally**: every cell's index compared against the wordlist entry it claims.
+`reardencode`'s four PDFs were verified for **construction math and wordlist membership** (token
+scan plus outcome-count arithmetic), **not** positionally; their two-page print layout defeats
+reliable text-order extraction, so a transposition inside a row would not have been caught.
+
+### Pinned sources
+
+| Worksheet | Ref | Artifact |
+|---|---|---|
+| `sarpulhu/dicebip39` | `main` @ `44cd94ae2393ce9b229f47cd4057b895be008e1c` (Unlicense) | `readme`, plain-text table |
+| `reardencode/bip39_dice` | `master` @ `65c830db0e9ebde69509e379980618894a3cd239` (no license) | 4 PDFs, 2pp each |
+| `taelfrinn/Bip39-diceware` | `master` @ `5320c9978fe89b5e068f6c0cafe45effe900e74c` (no license) | `coin_plus_d6_bip39.{md,html,pdf}`, 3pp |
+| SeedPicker | `https://seedpicker.net/guide/SeedPicker_Lookup_Table.pdf` | 5pp, PDFium, created 2019-01-11 |
+| RudeFox | `https://www.rudefox.io/custody/walkthrough/create-seed/lookup-tables.pdf` | 3pp, Acrobat Distiller, created 2020-09-25 |
+
+PDF sha256, as retrieved 2026-08-15:
+
+- reardencode 3d16 `909936c6be29e89bbb850a87ff8ffde5bec4e0038f98768e7c362d3920aae605`
+- reardencode 4d8 `5651f7104d6f392f7c61d4fb5687999248b180246b97ebb0c7c7eee4b905f4ed`
+- reardencode 1d8 4d4 `86106d28c1705f8023977f2f13a4f8faa98dbbabfda19244e6d8ff6509f242c1`
+- reardencode 1coin 5d4 `d80d4dc5a8133551472d541723f62e28642a48722a4dd6b2b6ac0fad0641a7b8`
+- taelfrinn `96bf7848fa6adcb0567d3d7fae6379925936b31ad6e5d502ec6834c05ebaf385`
+- SeedPicker `f43a5bd810b06b6c736c6a16f3a473f30a81cabee0763fcf473722ee539c533e`
+- RudeFox `f5bd56c15a2471413289b42e3ebc3da598dcd9c35a8e2ae681c3937283348c6d`
+
+### Constructions, all VERIFIED against the wordlist
+
+**`sarpulhu/dicebip39` — D6 only, parity + rejection.** One roll sets chart half (odd = top,
+even = bottom); five further rolls are taken as 1-4, rerolling any 5 or 6. That is
+2 x 4^5 = 2048 exactly. Verbatim: *"Keep rolling until odd/even,X,X,X,X,X is determined."*
+All 2048 rows parsed; the enumeration matches parity x 4^5 in order, and the words are the
+wordlist in exact order. **No errors found.**
+
+Note the fetched summary of this repo reported *four* trailing rolls, which yields 512 and cannot
+address 2048. The source says five. Read the table, not the description.
+
+**`reardencode/bip39_dice` — power-of-2 dice.** Four printable tables. Exact-cover configurations:
+1d8+2d16, 1d4+3d8, 1d8+4d4, 1coin+5d4, each 2048 outcomes = 11 bits. Reduced configurations:
+3d16, 4d8, 6d4 each produce 4096 and drop the top bit; 4096 is a multiple of 2048, so the
+reduction stays uniform. README states the design intent verbatim: *"the numeric value of the
+words in the BIP39 wordlist correspond to the binary values produced by the dice."*
+
+**`taelfrinn/Bip39-diceware` — 1 coin + 4d6 with an exact rejection boundary.** Heads addresses
+words 1-1296 (all of 6^4); tails addresses 1297-2048, rejecting any tails roll above `4362`.
+Verified: 1296 heads + 752 tails = 2048, and `4362` is exactly the 752nd of the 1296 ordered
+4d6 combinations. Table is a bijection onto the wordlist (2048 distinct words, set-equal to the
+wordlist); sorting heads-then-tails by roll value reproduces wordlist order. The raw file is a
+multi-column print layout, so file order is not wordlist order. **No errors found.**
+Last word: the README directs the user to try the block of 16 containing it, which is correct
+for a 12-word phrase (7 entropy bits + 4 checksum bits in the final word).
+
+**SeedPicker — the dice/word-picking hybrid.** Verbatim from page 1: *"Draw one ticket ➔ Roll the
+six sided die ➔ lookup the word and write it on the seed form ➔ Repeat 23 times."* 342 tickets x 6
+faces = 2052 cells; words occupy 2048 and the final four cells of ticket T342 read
+*"Draw a new ticket!"*, which is rejection sampling down to 2048 exactly. This is the one surveyed
+worksheet that combines physical drawing with dice.
+
+**RudeFox — binary grid.** 128 rows (2^7) x 16 columns (2^4) = 2048, row label carries the high 7
+bits (`0-000000-XXXX` form), column header the low 4. Grid structure verified. The dice-to-binary
+step is documented in the site walkthrough rather than in the PDF, and was **not** verified.
+
+### Finding: spreadsheet corruption in printed lookup tables
+
+Three of the five worksheets ship at least one cell that is not the canonical wordlist entry, and
+in every case the corruption is a spreadsheet artifact rather than a transcription slip.
+
+| Worksheet | Bad cells | Canonical | Mechanism |
+|---|---|---|---|
+| `reardencode/bip39_dice` (all 4 PDFs) | `TRUE` | `true` | Boolean coercion |
+| RudeFox | `TRUE`, `FALSE` | `true`, `false` | Boolean coercion |
+| SeedPicker | `March`, `October` | `march`, `october` | Proper-noun autocapitalization |
+| `sarpulhu/dicebip39` | none | — | Plain text, not a spreadsheet |
+| `taelfrinn/Bip39-diceware` | none | — | — |
+
+The mechanism is confirmed rather than inferred for reardencode: its README states the tables
+*"were made using a Google Sheet"*. In each reardencode table the corrupted cell sits between
+`truck` and `truly`, exactly where `true` belongs, and `false` is unaffected (`false` present,
+`FALSE` absent) — consistent with a sheet that coerced one literal and not the other.
+
+**Impact: none, and the earlier draft of this section overstated it.** The canonical wordlist is
+lowercase, so `TRUE` is not a BIP-39 word at all. An implementation handed it rejects the phrase
+rather than deriving a different seed — verified against `embit`, which raises
+`ValueError: Word 'True' is not in the dictionary`. Hardware wallets take word entry through a
+lowercase keyboard with autocomplete, so the user types `true` regardless of what the paper says.
+
+The consequence is a tell, not a defect: a table carrying an uncorrected spreadsheet artifact was
+never diffed against the wordlist. **The defect that would matter is a different one** — a cell
+holding a real BIP-39 word that belongs at another index, which no implementation would question
+and which would substitute silently. No table surveyed had one, subject to the depth-of-check note
+above (reardencode's four were verified for membership and construction, not positionally).
+
+### Also noted
+
+- **reardencode's 6d4 link is broken.** The README links `./Dice%20Seed%20Words%20-%206d4.pdf`
+  (404 at the pinned commit); the file is published as `Dice Seed Words - 1coin 5d4.pdf` (200).
+- **reardencode advises testing your dice** and ships `chisq.py` for it, directly contrary to
+  this analysis's §2/§4 position that testing cannot pay for itself. Recorded as a documented
+  disagreement, not as an error.
+- **SeedSigner history**, from reardencode's README: *"In SeedSigner < 0.5.1 you can use 11 or 23
+  words, and the device generates a last word (this givs 121 or 253 bits of entropy instead of 128
+  or 256)."* Not independently verified here.
+
+### Out of scope: codex32 (BIP-93)
+
+Mention-only. Verified from `bitcoin/bips` `bip-0093.mediawiki`: title *"codex32: Checksummed
+SSSS-aware BIP32 seeds"*, authors Leon Olsson Curr and Pearlwort Sneed, and Andrew Poelstra.
+Abstract verbatim: *"This document proposes a checksummed base32 format, "codex32", and a standard
+for backing up and restoring the master seed of a BIP-0032 hierarchical deterministic wallet using
+it."*
+
+It is worksheet-driven and hand-computable, so a reader will reasonably expect it here, but its
+output is a BIP-32 master seed rather than a BIP-39 phrase. The BIP carries a rationale section
+titled **"Not BIP-0039 Entropy"** explaining that choice, which is the citation for excluding it.
+Nothing in this document's method catalog applies to it, and it deserves its own treatment.
+
+### Out of scope: alternate wordlists, and the risk they create for worksheets
+
+Same disposition as codex32 — not analyzed here — but the risk belongs on the page, because every
+worksheet in this section is **wordlist-specific** and nothing about a finished phrase says which
+list produced it.
+
+Measured 2026-08-15. BIP-39 and SLIP-39 lists read from `embit` @ `691cee340bc47b6b831d911991694a559bca13b9`
+(`src/embit/wordlists/{bip39,slip39}.py`); Electrum files from `spesmilo/electrum` @
+`a94e460b50bc5afc334ca0d6feead47d3b50539f`.
+
+| Scheme | List size | Bits/word | Relationship to the BIP-39 English list |
+|---|---|---|---|
+| BIP-39 | 2048 | 11 | reference, sha256 `2f5eed53…3b24dbda` |
+| SLIP-39 | 1024 | 10 | different list, sha256 `bcc45553…e601eec3`; 553 words shared |
+| Electrum legacy ("old seed") | 1626 | — | different list, from a poetry frequency list |
+| Electrum v2 | 2048 | 11 | **byte-identical**, same sha256 `2f5eed53…3b24dbda` |
+
+**SLIP-39 overlaps enough to be mistaken for BIP-39, and agrees with it nowhere.** 553 of its 1024
+words also appear in the BIP-39 list, 54% of the SLIP-39 list. **Not one of those 553 sits at the
+same index in both lists** (`acid` is 15 in BIP-39 and 1 in SLIP-39; `acquire` 17 and 3; `actress`
+22 and 6). A phrase built from shared words looks equally plausible in either system and decodes to
+entirely different bits. Both lists have unique 4-letter prefixes, so prefix-based entry does not
+disambiguate them either.
+
+**Electrum legacy** uses 1626 words taken from *Wiktionary:Frequency_lists/Contemporary_poetry*
+(`electrum/old_mnemonic.py`, `assert n == 1626`), beginning `like, just, love, know, never`. Visibly
+not BIP-39, and the encoding is positional in a way BIP-39's is not.
+
+**Electrum v2 is the case that cannot be spotted by eye.** Its `electrum/wordlist/english.txt` is
+the BIP-39 English list byte for byte. Validation is not BIP-39's SHA-256 checksum but a version
+prefix over an HMAC, from `electrum/mnemonic.py`:
+
+```python
+s = hmac_oneshot(b"Seed version", x.encode('utf8'), hashlib.sha512).hex()
+return s.startswith(prefix)
+```
+
+The two systems are engineered to be mutually exclusive. Electrum's generator explicitly discards
+any candidate that would also pass BIP-39, with the comment *"Make sure the mnemonic we generate is
+not also a valid bip39 seed by accident"*:
+
+```python
+if bip39_is_checksum_valid(seed, wordlist=self.wordlist) == (True, True): continue
+```
+
+**Why this matters to a worksheet user.** The output of every table in this section is a BIP-39
+phrase and nothing else. Twelve or 24 words drawn from a BIP-39 worksheet are not an Electrum v2
+seed, will not validate as one, and if imported through a wallet's BIP-39 path will derive a
+different wallet than Electrum's own seed logic would. The reverse also holds. The words carry no
+marking, so the only record of which scheme was used is the user's own note of it.
+
+### iancoleman.io: the weak-entropy warning is stale in Dice + fixed-length mode
+
+Source-read 2026-08-16 at the pinned commit already used above,
+`iancoleman/bip39` @ `de71c22328b24e0848bbe1bd12ac8974ca83b5b8`.
+
+Following the §19 walkthrough (entropy type Dice, Mnemonic Length 24 Words) raises
+*"The mnemonic will appear more secure than it really is"*, and the page rates the input as
+sufficient for only 15 words. **The warning is a false positive in this state.** It should not be
+re-filed as a defect in this document's steps.
+
+Two different quantities are in play, from `src/js/index.js` L1893-L1913:
+
+```js
+var bits = entropy.binaryStr;
+if (mnemonicLength != "raw") {
+    var hash = sjcl.hash.sha256.hash(entropy.cleanStr);   // <- seed derives from cleanStr
+    ...
+    if (mnemonicLength / 3 * 32 > entropy.binaryStr.length) {   // <- warning tests binaryStr
+        DOM.entropyWeakEntropyOverrideWarning.removeClass("hidden");
+```
+
+- `cleanStr` is the event string after the 6-to-0 rewrite (`src/js/entropy.js` L184-L201), which is
+  exactly the §9 construction. This is what gets hashed, and it is what makes Dice + fixed length
+  agree with Keystone.
+- `binaryStr` is the variable-length packing from the `"base 6 (dice)"` table in `entropy.js` L43-L51:
+  faces 1, 2, 3 and the rewritten 6 carry 2 bits, faces 4 and 5 carry 1 bit. That is the §10 method
+  and it is what `raw` mode uses.
+
+Computed for this document's published 99-roll vector: `binaryStr` is **167 bits** (1.687 bits per
+roll). The threshold is `words/3*32`, so 12 words (128) and 15 words (160) pass, while 18 (192),
+21 (224) and 24 (256) trip the warning. That reproduces the observed "15 words" rating exactly.
+
+The rolls themselves carry 99 x log2(6) = **255.9 bits**, all of which reaches the seed through
+`sha256(cleanStr)`. The warning compares the request against a conversion the code discarded one
+line earlier, so it understates the entropy by the difference between the packing and the hash.
+
+Hex mode raises no warning because `"hexadecimal"` maps every character to exactly 4 bits
+(`entropy.js`), so the same 99 characters yield 396 bits and clear 256 outright.
