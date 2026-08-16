@@ -32,7 +32,7 @@
   Measured on instrumented builds of the shipped release, the capture path byte-identical to
   stock, on four physical devices, from the first preview frame to the final photograph. Every
   claim is reproducible, and the raw captures are published so you can check them.</p>
-  <p style="font-family:var(--mono); font-size:.72rem; letter-spacing:.08em; color:var(--muted); margin:0">Updated 2026-08-09 &middot; <a href="evidence.html#corrections">what changed</a></p>
+  <p style="font-family:var(--mono); font-size:.72rem; letter-spacing:.08em; color:var(--muted); margin:0">Updated 2026-08-12 &middot; <a href="evidence.html#corrections">what changed</a></p>
   <dl class="meta">
     <div><dt>Version</dt><dd>0.8.7</dd></div>
     <div><dt>History</dt><dd>Since v0.4.3</dd></div>
@@ -539,8 +539,11 @@ accounting and the measured evidence behind each recommendation.</p>
 <a href="https://github.com/SeedSigner/seedsigner/pull/990">seedsigner PR #990</a>, and the
 distinct-frames half as
 <a href="https://github.com/SeedSigner/seedsigner/pull/991">seedsigner PR #991</a>, which
-requires a full pool of distinct preview frames before the final capture (both open, not
-merged, when these links were added). The light-level check remains a recommendation.</p>
+requires a full pool of distinct preview frames before the final capture. <strong>Both are now
+merged upstream</strong>, after the 0.8.7 tag this analysis reviews, so they will arrive in the
+next release. Everything on this page describes 0.8.7, the current release, and
+<a href="#yourrole">what you should do</a> is what 0.8.7 asks of you. The light-level check
+remains a recommendation.</p>
 
 <p>Scope, stated honestly in both directions: this is a real design finding, not a break. No
 specific seed was ever demonstrated recoverable, and the state in question (face-down in shadow,
@@ -580,15 +583,21 @@ argument does not hold there, and nothing on the device notices.</p>
 
 <ul>
   <li><strong>A held button skips the preview layer entirely</strong>: it carries through the
-  preview, the capture and the accept screens in one gesture, and no frame is ever chained. An
-  upstream fix is pending: <a href="https://github.com/SeedSigner/seedsigner/pull/990">seedsigner
-  PR #990</a> (open, not merged, when this note was added). Until it ships in a release you are
-  running, the habit is the fix.</li>
+  preview, the capture and the accept screens in one gesture, and no frame is ever chained. The
+  upstream fix, <a href="https://github.com/SeedSigner/seedsigner/pull/990">seedsigner PR
+  #990</a>, is merged and will arrive in the next release. Until you are running a release that
+  carries it, the habit is the fix.</li>
   <li><strong>A tap gives the design the 50 frames it was built around.</strong> The window fills
   in roughly three and a half to six seconds of live preview, depending on the board, so the few
   seconds spent aiming are already doing that work. Holding the preview open longer does not add
   more frames, only fresher ones.</li>
 </ul>
+
+<p>The next release enforces what this habit stands in for. The merged changes hold the capture
+screen shut until 50 distinct, non-blank preview frames have been collected, and show a counter
+while they fill (<a href="https://github.com/SeedSigner/seedsigner/pull/991">PR #991</a>), so a
+held button can neither skip the window nor fire the capture the moment it fills. The lit-scene
+instruction above is unaffected: no release yet checks how much light reached the sensor.</p>
 
 <h3 id="do-watch"><a class="anchor" href="#do-watch">Watch the preview, and know what watching buys you</a></h3>
 

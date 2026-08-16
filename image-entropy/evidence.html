@@ -96,7 +96,7 @@ a.cid:hover{ color:var(--accent-ink); }
   <p class="standfirst">Every measurement behind the image entropy analysis, with the method that
   produced it, the raw frames it was computed from, and the command that recomputes it. Written to
   be checked rather than read.</p>
-  <p style="font-family:var(--mono); font-size:.72rem; letter-spacing:.08em; color:var(--muted); margin:0">Updated 2026-08-09 &middot; <a href="#corrections">what changed</a></p>
+  <p style="font-family:var(--mono); font-size:.72rem; letter-spacing:.08em; color:var(--muted); margin:0">Updated 2026-08-12 &middot; <a href="#corrections">what changed</a></p>
   <dl class="meta">
     <div><dt>Companion to</dt><dd><a href="./">The analysis</a></dd></div>
     <div><dt>Version</dt><dd>0.8.7</dd></div>
@@ -298,7 +298,7 @@ with the reason:</p>
 <table>
   <thead><tr><th>Finding</th><th>Why it is rejected</th></tr></thead>
   <tbody>
-    <tr><td>Absence of a camera-validation check in code, filed as a novel critical</td><td>Known and adjudicated (<a href="#a-3">IE-A-03</a>). The sharpened, evidence-backed form, a distinct-digest health check on the preview window, is this analysis's own recommendation (<a href="#oneLayer">section 8</a>), filed upstream as <a href="https://github.com/SeedSigner/seedsigner/pull/991">PR #991</a>. A re-filing adds nothing unless it carries new evidence</td></tr>
+    <tr><td>Absence of a camera-validation check in code, filed as a novel critical</td><td>Known and adjudicated (<a href="#a-3">IE-A-03</a>). The sharpened, evidence-backed form, a distinct-digest health check on the preview window, is this analysis's own recommendation (<a href="#oneLayer">section 8</a>), merged upstream as <a href="https://github.com/SeedSigner/seedsigner/pull/991">PR #991</a> for a release after 0.8.7. A re-filing adds nothing unless it carries new evidence</td></tr>
     <tr><td>Byte-identical frames in a preview window prove the instrumentation failed</td><td>Backwards for that series type. Preview duplicates are the finding: a light-starved scene legitimately quantizes to a constant. <a href="analyze_preview.py">analyze_preview.py</a> exists precisely because <a href="analyze_mcv.py">analyze_mcv.py</a>'s duplicate guard is correct for final-image bursts and wrong for windows</td></tr>
     <tr><td>The dark runs never clear the requirement, filed without estimator scoping</td><td>Scoping is the whole question, and both halves are now measured (2026-08-09): on MCV every measured chain cleared 256, including all six preview-zero runs (<a href="#m-4">IE-M-04</a>); under the full ten-estimator floor the preview-zero chains do not clear (<a href="#m-20">IE-M-20</a>). A filing that picks one estimator and ignores the other adds nothing; the un-scoped "device is broken in the dark" form also ignores that the state is one an ordinary capture has no reason to visit (<a href="#a-5">IE-A-05</a>)</td></tr>
     <tr><td>Exfiltration, or entropy data at rest</td><td>The image buffer is never transmitted and never written to storage on a release image</td></tr>
@@ -460,6 +460,7 @@ amber caveat badge; plain verified claims wear green.</p>
   <dl>
     <dt>Effect</dt><dd>A held button used to crash. The fix converted that into a silent, deterministically reachable zero-preview-frame path</dd>
     <dt>Measured</dt><dd><a href="#m-6">IE-M-06</a>, 10 of 10 captures</dd>
+    <dt>Scope</dt><dd>Every release from v0.7.0 through v0.8.7, the current release. Closed upstream after 0.8.7 by <a href="https://github.com/SeedSigner/seedsigner/pull/990">PR #990</a> and <a href="https://github.com/SeedSigner/seedsigner/pull/991">PR #991</a>, merged 2026-08-12 (<a href="#fixstatus">status</a>); no release carries the fix yet</dd>
     <dt>Full treatment</dt><dd><a href="#oneLayer">Section 8</a></dd>
   </dl>
 </div>
@@ -1418,6 +1419,14 @@ PR #46. Every release since has been examined. Full working:
 <p>v0.4.6, v0.5.1 and v0.6.0 are byte-identical to their predecessors in this path. v0.4.5's two
 <code>update_last_input_time()</code> calls are screensaver bookkeeping with no entropy effect.</p>
 
+<p><strong>After v0.8.7, unreleased.</strong> Two changes are merged to <code>dev</code> and carried
+by no release yet: the held-button path closes, and the preview window becomes a gated pool of 50
+distinct, non-blank frames rather than whatever the loop happened to append. The four hashed inputs
+and their order are unchanged; what changes is which preview frames reach the hash, and whether the
+capture can be reached at all. Detail and pinned source in
+<a href="#fixstatus">section 8</a>. The table above ends at 0.8.7 because that is what this document
+measured, and no figure on this page describes the merged code.</p>
+
 <div class="note pass">
   <span class="tag">Was the chain ever weaker in composition? No</span>
   <p><strong>VERIFIED from source at every tag (<a href="#s-4">IE-S-04</a>). No release could produce
@@ -1489,7 +1498,8 @@ silent path it created went unnoticed until instrumentation.</p>
   closes route 2 completely. It does nothing for route 1. Filed upstream 2026-08-08 as
   <a href="https://github.com/SeedSigner/seedsigner/pull/990">seedsigner PR #990</a>, which takes
   the released-edge form at both the live preview and the final image review and adds Screen-level
-  tests covering the held-button sequences; open, not merged, when this link was added.</li>
+  tests covering the held-button sequences; merged 2026-08-12, commit <code>2bbae4a5</code>, for a
+  release after 0.8.7.</li>
   <li><strong>An entropy health check on frame content: a minimum count of distinct frame digests
   in the window before a capture is accepted.</strong> This is the fix the measurements actually
   argue for, because it addresses both routes and the mechanism behind them.
@@ -1511,14 +1521,57 @@ silent path it created went unnoticed until instrumentation.</p>
   light starvation are different axes, and each check covers the one the other cannot.</li>
 </ul>
 
-<p>Two of the three are now filed upstream:
-<a href="https://github.com/SeedSigner/seedsigner/pull/990">PR #990</a> (the held-button fix)
-and <a href="https://github.com/SeedSigner/seedsigner/pull/991">PR #991</a> (a full pool of
-distinct, non-blank preview frames required before the final capture), both open, not merged,
-when these links were added. The light-level check remains unfiled.</p>
+<h3 id="fixstatus"><a class="anchor" href="#fixstatus">Upstream status, and what the merged form does</a></h3>
 
-<p>These are recommendations to the project, stated as the measurements support them. Whether and
-how they land is a project decision; nothing in this document depends on their adoption.</p>
+<p>Two of the three are <strong>merged upstream</strong>, both on 2026-08-12, after the
+<code>0.8.7</code> tag this document reviews:
+<a href="https://github.com/SeedSigner/seedsigner/pull/990">PR #990</a> (the held-button fix,
+commit <code>2bbae4a5</code>) and
+<a href="https://github.com/SeedSigner/seedsigner/pull/991">PR #991</a> (a full pool of distinct,
+non-blank preview frames required before the final capture, commit <code>5088588d</code>). They
+will arrive in the next release. <strong>Nothing in this document is restated on that account</strong>:
+every measurement, claim and item of advice here describes 0.8.7, the release users are running.
+The light-level check remains unfiled.</p>
+
+<p><strong>What the merged form does &middot; VERIFIED, source</strong>
+(<a href="https://github.com/SeedSigner/seedsigner/blob/5088588dd4f913a489329d2422b0f925ed281856/src/seedsigner/gui/screens/tools_screens.py#L20-L246">tools_screens.py
+L20&ndash;246</a>, the live preview screen, and
+<a href="https://github.com/SeedSigner/seedsigner/blob/5088588dd4f913a489329d2422b0f925ed281856/src/seedsigner/gui/screens/tools_screens.py#L283">L283</a>,
+the final image review's release wait, both @ <code>5088588d</code>; pinned to the merge commit
+because no tag carries this code yet). A frame enters the pool only if it passes two rules: it is
+not a single flat color
+(<code>getextrema()</code> returning an equal low and high on every channel rejects an all-black
+or an overexposed all-white frame), and its SHA-256 has not been admitted before. The digest set
+is never pruned, so a frame identical to any earlier one can never be counted twice. The final
+capture is unreachable until 50 such frames are held, a progress bar and an
+<code>N/50</code> counter report the fill, and a reworked hold guard
+(<code>is_maybe_still_holding</code>) requires an observed all-released state before a click can
+fire the capture, so a still-held button cannot trigger it the instant the pool fills. Joystick
+LEFT still exits.</p>
+
+<p><strong>What that closes, read against this document's data &middot; INFERRED.</strong> The
+preview-zero windows (<a href="#m-6">IE-M-06</a>) become unreachable: an empty pool cannot be
+advanced past. Cached and re-served frames (<a href="#m-8">IE-M-08</a>,
+<a href="#i-4">IE-I-04</a>) are never admitted, rather than admitted and credited zero. In the
+measured dark windows on the standard panel, 45 to 50 of the up-to-50 slots held the known
+pure-black constant or a repeat: the flat-color rule rejects the constant and the digest rule
+rejects the repeats, so on that data the pool would fill slowly at best, and in the six runs
+where every slot held the constant it could not fill at all. A blocked lens becomes a stalled
+counter instead of a seed.</p>
+
+<p><strong>What it does not close &middot; INFERRED.</strong> The dim regime is untouched by both
+rules. The data6 L4 windows held 19 and 34 distinct frames whose worst live-live pairs carried
+approximately zero bits (<a href="data6/RUNS.md">data6/RUNS.md</a>); those frames are neither flat
+nor repeated, so a pool would fill from them and the capture would proceed. That is the gap the
+light-level check covers, and it is why the two checks were argued as a pair rather than as
+alternatives.</p>
+
+<p>Both readings above are source reading applied to this document's measurements. <strong>The
+merged code has not been run on the capture rig</strong>, and no figure or measurement on this
+page characterizes it.</p>
+
+<p>These were recommendations to the project, stated as the measurements support them. Two landed;
+nothing in this document depended on their adoption, and nothing depends on it now.</p>
 
 <h2 id="edges"><a class="anchor" href="#edges"><span class="num">9</span>Other edge cases</a></h2>
 
@@ -1597,7 +1650,7 @@ also looks exactly like a dead camera, and will be reported as one.</p>
   (<a href="#m-15">IE-M-15</a>: both display classes occur across runs from 113 to 36,462 bits),
   and it cannot detect a collapsed preview window, because the frames are displayed whether or not
   they are chained (<a href="#m-6">IE-M-06</a>).</p>
-  <dl><dt>Weakest point</dt><dd>A hardware fault returning a solid buffer would still flow through to a valid-looking seed; not reachable by occluding the lens, needs a fault. The distinct-digest check in <a href="#oneLayer">section 8</a> is the code-side complement this analysis recommends</dd></dl>
+  <dl><dt>Weakest point</dt><dd>A hardware fault returning a solid buffer would still flow through to a valid-looking seed; not reachable by occluding the lens, needs a fault. The distinct-digest check in <a href="#oneLayer">section 8</a> is the code-side complement this analysis recommends; it is merged upstream for a release after 0.8.7 (<a href="#fixstatus">status</a>), and a solid buffer is exactly the case its flat-color rule rejects</dd></dl>
 </div>
 
 <div class="claim">
@@ -2214,6 +2267,22 @@ reviewer aid, which is a different thing and is not presented as a correction hi
   image can be taken, recorded as open, not merged, when this link was added. Both documents'
   recommendation status wording was updated to match. The light-level check remains unfiled.
   Status links only; no figure, measurement or claim status changed.</li>
+  <li><strong>2026-08-12, both upstream fixes merged.</strong>
+  <a href="https://github.com/SeedSigner/seedsigner/pull/990">PR #990</a> (<code>2bbae4a5</code>)
+  and <a href="https://github.com/SeedSigner/seedsigner/pull/991">PR #991</a>
+  (<code>5088588d</code>) were merged upstream, after the <code>0.8.7</code> tag both documents
+  review, so they will arrive in the next release and are carried by none yet. Every "open, not
+  merged" status line in both documents now reads as merged and unreleased. <strong>The
+  reader-facing advice is deliberately unchanged</strong>: 0.8.7 is the release users are running,
+  and on it the habits are still the fix. New material, all forward-looking:
+  <a href="#fixstatus">a section 8 subsection</a> reads the merged code at its merge commit (no tag
+  carries it yet), records what it closes against the measurements here, and states the case it
+  leaves open (the dim regime, whose distinct but nearly empty frames pass both new admission
+  rules, and which only the still-unfiled light-level check would catch); <a href="#history">section 7</a>
+  gained an unreleased note under the release table; <a href="#s-7">IE-S-07</a> gained a scope
+  line; and the analysis gained one paragraph in <a href="./#do-tap">section 5</a> saying what the
+  next release will enforce. No measurement, figure or claim about 0.8.7 changed, and the merged
+  code has not been measured on the rig.</li>
 </ul>
 
 <h3 id="figureparams"><a class="anchor" href="#figureparams">Figure parameters</a></h3>
