@@ -153,7 +153,7 @@
 .dims th{font-family:var(--mono);font-size:.58rem;letter-spacing:.13em;text-transform:uppercase;
   color:var(--muted);text-align:left;font-weight:400;padding:0 .3rem .45rem;
   border-bottom:1px solid var(--rule-strong)}
-.dims th:first-child{padding-left:0}
+.dims th:first-child,.dims th:nth-child(2){padding-left:0}
 .dims td{padding:.26rem .25rem;border-bottom:1px solid var(--rule);vertical-align:middle}
 .dims td.m{padding-left:0;padding-right:.9rem;white-space:nowrap}
 .dims td.m b{font-weight:650;font-size:.87rem}
@@ -170,6 +170,16 @@
 .dimlegend i{font-style:normal;padding:.05rem .35rem;border-radius:2px;margin-right:.3rem}
 .dimnotes{margin:.2rem 0 0;padding-left:1.15rem}
 .dimnotes li{margin-bottom:.5rem}
+/* The chart's rail: two brackets grouping the rows by where the work happens. The dice row sits
+   in the gap between them on purpose (the paragraph after the legend says why), so its rail cell
+   is empty. The brackets stay on the rule color, not the accent: the grouping is background
+   context and the accent pulled the eye to it. */
+.dims td.rail{position:relative;padding:.26rem .55rem .26rem .1rem;text-align:center}
+.dims td.rail span{writing-mode:vertical-rl;transform:rotate(180deg);font-family:var(--mono);
+  font-size:.55rem;letter-spacing:.1em;text-transform:uppercase;color:var(--muted)}
+.dims td.rail::after{content:"";position:absolute;top:.32rem;bottom:.32rem;right:0;width:.3rem;
+  border:1px solid var(--rule-strong);border-right:0}
+.dims td.rail.gap::after{content:none}
 /* Each method section carries this near its top: the way to reproduce the method should reach
    the reader before the explanation, not after it. */
 .checkline{font-family:var(--mono);font-size:.79rem;line-height:1.5;color:var(--muted);
@@ -188,7 +198,7 @@
   over.</p>
   <dl class="meta">
     <div><dt>First published</dt><dd>2026-08-03</dd></div>
-    <div><dt>Updated</dt><dd><a href="#corrections">2026-08-20</a></dd></div>
+    <div><dt>Updated</dt><dd><a href="#corrections">2026-08-21</a></dd></div>
     <div><dt>Scope</dt><dd>Dice &rarr; BIP-39</dd></div>
     <div><dt>Charted</dt><dd>17 implementations</dd></div>
     <div><dt>Method</dt><dd>Source-read</dd></div>
@@ -267,48 +277,53 @@ afterward.</p>
 <div class="tablewrap">
 <table class="dims">
   <thead>
-    <tr><th>Method</th><th>Setup</th><th>Procedure</th><th>What must be verified</th></tr>
+    <tr><th></th><th>Method</th><th>Setup</th><th>Procedure</th><th>What to verify</th></tr>
   </thead>
   <!-- Row order is load-bearing. Rows run by increasing user involvement, which is also the axis
        along which convenience trades against verifiability, so the weak cells fall on a diagonal
        from the right column down to the left. That diagonal is the chart's main signal. Re-sorting
-       these rows alphabetically or by any other key destroys it. -->
+       these rows alphabetically or by any other key destroys it. The rail brackets depend on the
+       same order: the device methods and the hand methods are contiguous only because involvement
+       sorts them that way, and the dice row's empty rail cell is deliberate. -->
   <tbody>
     <tr>
+      <td class="rail" rowspan="2"><span>On device</span></td>
       <td class="m"><b>Device RNG</b><i>what most wallets do</i></td>
-      <td class="r"><span class="g1">Nothing to obtain</span></td>
-      <td class="r"><span class="g1">Nothing to do</span></td>
-      <td class="r"><span class="w">Output can't be verified</span></td>
+      <td class="r"><span class="g1">None</span></td>
+      <td class="r"><span class="g1">Automatic, instant</span></td>
+      <td class="r"><span class="w">Input can't be verified</span></td>
     </tr>
     <tr>
       <td class="m"><b>Camera image</b><i>SeedSigner's camera</i></td>
-      <td class="r"><span class="g1">Nothing to obtain</span></td>
-      <td class="r"><span class="g1">Aim and accept</span></td>
-      <td class="r"><span class="a">Input only</span></td>
+      <td class="r"><span class="g1">None</span></td>
+      <td class="r"><span class="g1">Aim, review, accept</span></td>
+      <td class="r"><span class="a">No external verification</span></td>
     </tr>
     <tr>
-      <td class="m"><b>Dice, hashed</b><i>&sect;8</i></td>
+      <td class="rail gap"></td>
+      <td class="m"><b>Dice, hashed</b><i>device calcs words</i></td>
       <td class="r"><span class="g">Grab some dice</span></td>
       <td class="r"><span class="g">99 rolls, typed in</span></td>
-      <td class="r"><span class="g">Hash, then checksum</span></td>
+      <td class="r"><span class="g">Full mnemonic</span></td>
     </tr>
     <tr>
+      <td class="rail" rowspan="3"><span>By hand</span></td>
       <td class="m"><b>Coin flips</b><i>binary to words</i></td>
       <td class="r"><span class="g">Coins + worksheet</span></td>
       <td class="r"><span class="a">Lookups or binary math</span></td>
-      <td class="r"><span class="g1">Just the checksum</span></td>
+      <td class="r"><span class="g1">Just the final word</span></td>
     </tr>
     <tr>
-      <td class="m"><b>Dice worksheet</b><i>&sect;12</i></td>
+      <td class="m"><b>Dice worksheet</b><i>rolls to words</i></td>
       <td class="r"><span class="g">Dice + worksheet</span></td>
       <td class="r"><span class="w">Rolls, rerolls, lookups</span></td>
-      <td class="r"><span class="g1">Just the checksum</span></td>
+      <td class="r"><span class="g1">Just the final word</span></td>
     </tr>
     <tr>
       <td class="m"><b>Word picking</b><i>draw from 2048 slips</i></td>
       <td class="r"><span class="w">Cut out 2048 slips</span></td>
       <td class="r"><span class="g">Draw, then type in</span></td>
-      <td class="r"><span class="g1">Just the checksum</span></td>
+      <td class="r"><span class="g1">Just the final word</span></td>
     </tr>
   </tbody>
 </table>
@@ -318,10 +333,13 @@ afterward.</p>
 <span><i class="a">&nbsp;&nbsp;</i>a real cost</span>
 <span><i class="w">&nbsp;&nbsp;</i>the method's weak point</span></p>
 
+<p>The vertical brackets on the left indicate where the work happens. Hashed dice sit in neither group: the rolls happen
+in the real world but the device plays an integral role.</p>
+
 <ul class="dimnotes">
   <li><b>Device RNG.</b> The <em>process</em> can be audited, often in real depth, but the
-  <em>result</em> cannot be verified. A device with a broken generator hands you a seed that
-  looks like a sound one, but is not.</li>
+  <em>input</em>, the noise the generator sampled, can't be observed. A device with a broken
+  generator hands you a seed that looks like a sound one, but is not.</li>
   <li><b>Camera image.</b> The live preview is your verification that real camera data is
   arriving. But the frame never leaves the device, so nothing can be rechecked afterward.</li>
   <li><b>Dice, hashed.</b> The rolls go straight into the device, so there are no lookups and no
@@ -2026,6 +2044,14 @@ and why. Revisions made while drafting are not corrections and are not listed.</
   answer to an untrustworthy RNG rather than the answer, since the chart carries four hand methods;
   and a line saying verification generally needs a computer was cut, being true of the hashed
   methods but not of the worksheet or word-picking routes.</li>
+  <li><strong>2026-08-21, the &sect;1 chart now marks where each method runs.</strong> A rail
+  beside the chart brackets the first two methods as running on the device and the last three as
+  running by hand, with hashed dice left between the brackets: the rolls happen in the world and
+  the device finishes the job. The grouping was implicit in the row order and is now stated. The
+  cells were tightened in the same edit, and two of the changes are more than wording: the device
+  RNG row now names the <em>input</em>, the noise the generator sampled, as what cannot be
+  verified, where it previously said the output; and the hand methods' last-column cells name the
+  final word rather than the checksum.</li>
 </ul>
 
 
