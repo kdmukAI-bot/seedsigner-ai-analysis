@@ -142,6 +142,34 @@
 @media (max-width:720px){.mxnotes{columns:1}}
 .mxnotes.one{columns:1;margin-top:.8rem}
 .wlist sup{font-family:var(--mono);font-size:.62rem;color:var(--muted);vertical-align:super;margin-left:1px}
+:root{--dimbad:#9C2A1A;--dimbad-soft:#F7E4DF;--dimbest-soft:#E2F1E8;--dimok-soft:#EBEEEC;--dimok:#4E5C55}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--dimbad:#E38070;--dimbad-soft:#33201B;--dimbest-soft:#1F3A2C;--dimok-soft:#262A27;--dimok:#7C8B83}}
+:root[data-theme="dark"]{--dimbad:#E38070;--dimbad-soft:#33201B;--dimbest-soft:#1F3A2C;--dimok-soft:#262A27;--dimok:#7C8B83}
+:root[data-theme="light"]{--dimbad:#9C2A1A;--dimbad-soft:#F7E4DF;--dimbest-soft:#E2F1E8;--dimok-soft:#EBEEEC;--dimok:#4E5C55}
+/* Section 1's three-dimension chart. The color carries the rating, so every cell also says the
+   rating in words: a reader who cannot separate the greens from the ambers still gets the ranking
+   from the label alone. Grounds are the theme's soft tokens, so both themes come free. */
+.dims{width:100%;border-collapse:collapse;margin:.1rem 0 .55rem;font-size:.8rem}
+.dims th{font-family:var(--mono);font-size:.58rem;letter-spacing:.13em;text-transform:uppercase;
+  color:var(--muted);text-align:left;font-weight:400;padding:0 .3rem .45rem;
+  border-bottom:1px solid var(--rule-strong)}
+.dims th:first-child{padding-left:0}
+.dims td{padding:.26rem .25rem;border-bottom:1px solid var(--rule);vertical-align:middle}
+.dims td.m{padding-left:0;padding-right:.9rem;white-space:nowrap}
+.dims td.m b{font-weight:650;font-size:.87rem}
+.dims td.m i{display:block;font-style:normal;font-family:var(--mono);font-size:.62rem;
+  line-height:1.35;color:var(--muted)}
+.dims td.r span{display:block;padding:.42rem .6rem;border-radius:3px;line-height:1.3;font-size:.76rem}
+.dims .g1,.dimlegend .g1{background:var(--dimbest-soft);color:var(--pass)}
+.dims .g,.dimlegend .g{background:var(--dimok-soft);color:var(--dimok)}
+.dims .a,.dimlegend .a{background:var(--warn-soft);color:var(--warn)}
+.dims .w,.dimlegend .w{background:var(--dimbad-soft);color:var(--dimbad)}
+.dimlegend{display:flex;flex-wrap:wrap;gap:.35rem 1.1rem;font-family:var(--mono);font-size:.66rem;
+  color:var(--muted);margin:.1rem 0 1rem;padding-left:.1rem}
+.dimlegend span{white-space:nowrap}
+.dimlegend i{font-style:normal;padding:.05rem .35rem;border-radius:2px;margin-right:.3rem}
+.dimnotes{margin:.2rem 0 0;padding-left:1.15rem}
+.dimnotes li{margin-bottom:.5rem}
 /* Each method section carries this near its top: the way to reproduce the method should reach
    the reader before the explanation, not after it. */
 .checkline{font-family:var(--mono);font-size:.79rem;line-height:1.5;color:var(--muted);
@@ -160,6 +188,7 @@
   over.</p>
   <dl class="meta">
     <div><dt>First published</dt><dd>2026-08-03</dd></div>
+    <div><dt>Updated</dt><dd><a href="#corrections">2026-08-20</a></dd></div>
     <div><dt>Scope</dt><dd>Dice &rarr; BIP-39</dd></div>
     <div><dt>Charted</dt><dd>17 implementations</dd></div>
     <div><dt>Method</dt><dd>Source-read</dd></div>
@@ -215,6 +244,7 @@
     <li><a href="#sources">Where each row was read</a></li>
     <li><a href="#surveying">Surveying a wallet that is not here</a></li>
     <li><a href="#objection">The case against dice, and what happened to it</a></li>
+    <li><a href="#corrections">Corrections</a></li>
   </ol>
 </nav>
 
@@ -223,12 +253,101 @@
 device's own random number generator, its RNG. You are then trusting that RNG and there is nothing
 in its output you can inspect to tell whether it did its job (see: the 2026 Coldcard incident,
 <a href="#objection">&sect;20</a>).</p>
-<p>Dice are for when you would rather not take that on trust. The rolls are the only input, so the
+<p>Dice are one answer for when you would rather not take that on trust. The rolls are the only input, so the
 seed is a pure function of something you watched happen, reproducible elsewhere to confirm
 the device did what it should.</p>
 <p class="pull">You have to <em>trust</em> a seed a device creates for you. You can
 <em>verify</em> a seed you rolled yourself.</p>
-<p>Verifying generally needs a computer, since most of these methods end in a hash.</p>
+
+<h3 id="tradeoffs"><a class="anchor" href="#tradeoffs">Convenience against verifiability</a></h3>
+<p>These methods trade against each other rather than ranking cleanly. Three dimensions separate
+them: what you have to obtain before
+you start, what you have to do once you have it, and how much of the result you can check
+afterward.</p>
+<div class="tablewrap">
+<table class="dims">
+  <thead>
+    <tr><th>Method</th><th>Setup</th><th>Procedure</th><th>What must be verified</th></tr>
+  </thead>
+  <!-- Row order is load-bearing. Rows run by increasing user involvement, which is also the axis
+       along which convenience trades against verifiability, so the weak cells fall on a diagonal
+       from the right column down to the left. That diagonal is the chart's main signal. Re-sorting
+       these rows alphabetically or by any other key destroys it. -->
+  <tbody>
+    <tr>
+      <td class="m"><b>Device RNG</b><i>what most wallets do</i></td>
+      <td class="r"><span class="g1">Nothing to obtain</span></td>
+      <td class="r"><span class="g1">Nothing to do</span></td>
+      <td class="r"><span class="w">Output can't be verified</span></td>
+    </tr>
+    <tr>
+      <td class="m"><b>Camera image</b><i>SeedSigner's camera</i></td>
+      <td class="r"><span class="g1">Nothing to obtain</span></td>
+      <td class="r"><span class="g1">Aim and accept</span></td>
+      <td class="r"><span class="a">Input only</span></td>
+    </tr>
+    <tr>
+      <td class="m"><b>Dice, hashed</b><i>&sect;8</i></td>
+      <td class="r"><span class="g">Grab some dice</span></td>
+      <td class="r"><span class="g">99 rolls, typed in</span></td>
+      <td class="r"><span class="g">Hash, then checksum</span></td>
+    </tr>
+    <tr>
+      <td class="m"><b>Coin flips</b><i>binary to words</i></td>
+      <td class="r"><span class="g">Coins + worksheet</span></td>
+      <td class="r"><span class="a">Lookups or binary math</span></td>
+      <td class="r"><span class="g1">Just the checksum</span></td>
+    </tr>
+    <tr>
+      <td class="m"><b>Dice worksheet</b><i>&sect;12</i></td>
+      <td class="r"><span class="g">Dice + worksheet</span></td>
+      <td class="r"><span class="w">Rolls, rerolls, lookups</span></td>
+      <td class="r"><span class="g1">Just the checksum</span></td>
+    </tr>
+    <tr>
+      <td class="m"><b>Word picking</b><i>draw from 2048 slips</i></td>
+      <td class="r"><span class="w">Cut out 2048 slips</span></td>
+      <td class="r"><span class="g">Draw, then type in</span></td>
+      <td class="r"><span class="g1">Just the checksum</span></td>
+    </tr>
+  </tbody>
+</table>
+</div>
+<p class="dimlegend"><span><i class="g1">&nbsp;&nbsp;</i>no cost</span>
+<span><i class="g">&nbsp;&nbsp;</i>minor cost</span>
+<span><i class="a">&nbsp;&nbsp;</i>a real cost</span>
+<span><i class="w">&nbsp;&nbsp;</i>the method's weak point</span></p>
+
+<ul class="dimnotes">
+  <li><b>Device RNG.</b> The <em>process</em> can be audited, often in real depth, but the
+  <em>result</em> cannot be verified. A device with a broken generator hands you a seed that
+  looks like a sound one, but is not.</li>
+  <li><b>Camera image.</b> The live preview is your verification that real camera data is
+  arriving. But the frame never leaves the device, so nothing can be rechecked afterward.</li>
+  <li><b>Dice, hashed.</b> The rolls go straight into the device, so there are no lookups and no
+  arithmetic to get wrong: you write down what you rolled and type it in. The result reproduces
+  anywhere, though a machine does all of the conversion rather than just the last word.</li>
+  <li><b>Coin flips.</b> Eleven flips yield eleven bits, which specify one word exactly, with no
+  rerolling. But bits are not words, so reaching the word takes one of three routes: search a
+  worksheet for <code>10100101101</code>, manually convert binary to decimal, or type all 256
+  flips into a device.</li>
+  <li><b>Dice worksheet.</b> Six faces do not divide into eleven bits, so the worksheets branch
+  and reroll. In a common D6 one, the first roll picks a half of the chart by odd or even, then
+  five more are read as 1 to 4, with every 5 or 6 thrown again. That yields one word, and you need
+  twenty-three.</li>
+  <li><b>Word picking.</b> Cutting out 2048 slips is the whole cost.</li>
+</ul>
+
+<p><strong>No route here is machine-free.</strong> A BIP-39 phrase ends in a checksum word, so
+that word gets computed however you reached the other twenty-three (<a href="#paper">&sect;12</a>).
+The last column is what each method leaves you to verify.</p>
+<p>Which column matters most is yours to decide, and reasonable people land in different rows.
+But one row never drops below easy.</p>
+<p><strong>Dice is a reasonable compromise that holds up well enough in all three columns.</strong> The dice are ones you
+already own, the procedure adds nothing to the rolling beyond typing the digits in, and the result
+reproduces anywhere from what you wrote down. Every other method on this chart offsets its
+strengths with a drawback somewhere: a costly setup, an awkward procedure, or a result nobody can
+check.</p>
 
 <h2 id="quality"><a class="anchor" href="#quality"><span class="num">2</span>Does dice quality matter?</a></h2>
 <p><strong>Not enough to change anything you do.</strong> A biased die does cost you bits, so the
@@ -570,7 +689,7 @@ use the same method.</p>
       <td class="c"><i class="y">&#9679;</i><sup>9</sup></td>
       <td class="c"><i class="n">&middot;</i></td>
       <td class="c"><i class="n">&middot;</i></td>
-      <td class="what">dice, coin</td>
+      <td class="what">dice</td>
     </tr>
     <tr>
       <td class="who"><b>Sparrow</b><i>Desktop software</i></td>
@@ -674,7 +793,7 @@ use the same method.</p>
       <td class="what">dice</td>
     </tr>
     <tr class="rest">
-      <td class="who"><b>25 more wallets</b><i>Trezor, Ledger, and the rest of <a href="#none">&sect;13</a></i></td>
+      <td class="who"><b>24 more wallets</b><i>Trezor, Ledger, and the rest of <a href="#none">&sect;13</a></i></td>
       <td class="c"><i class="n">&middot;</i></td>
       <td class="c"><i class="n">&middot;</i></td>
       <td class="c"><i class="n">&middot;</i></td>
@@ -700,7 +819,7 @@ use the same method.</p>
   <li>Documents the final-word feature and names dice, but advises against dice and publishes no table.</li>
   <li>Requires 100 rolls for 24 words, not 99, while its own documentation still says 99.</li>
   <li>D20 rolls are joined with dashes before hashing, so a D20 transcript reproduces only on Krux.</li>
-  <li>Its Calc Final Word tool takes the last word's spare bits from coin flips, a BIP-39 word you pick, or zeros. Not from a dice table.</li>
+  <li>Its Calc Final Word tool takes the last word's spare bits from coin flips, a BIP-39 word you pick, or zeros. Not from a dice table. A coin-flip routine for a whole seed exists in the code but no menu reaches it, so the chart records dice only.</li>
   <li>Autosuggests every checksum-valid last word; ships a Border Wallets grid, not a dice table.</li>
   <li>You set any word's 11 bits by hand and the checksum is repaired; words you do not set stay device RNG.</li>
   <li>99 rolls and 24 words only, with no 50-roll path.</li>
@@ -912,8 +1031,8 @@ and different arithmetic. The two are not variants of one scheme and a transcrip
 nothing to the other.</p>
 <p>Worth noticing: the final 3 bits of a 24-word seed come from a human choosing among 8
 candidates, not from the dice. Negligible against 253, but the dice do not supply everything.</p>
-<p>Passport's variant hands those 3 bits to the device's RNG instead, so its last word is not yours
-at all. That is the difference between its half mark in the chart and BitBox02's full one.</p>
+<p>Both Passports hand those 3 bits to the device's RNG instead, so the last word is not yours at
+all. That is the difference between their half marks in the chart and BitBox02's full one.</p>
 
 <div class="note">
   <span class="tag">Not interoperable and not trying to be</span>
@@ -997,7 +1116,7 @@ the ordinary ability to type in a phrase you produced elsewhere:</p>
 <p class="wlist"><strong>Trezor<sup>1</sup> &middot; Ledger<sup>2</sup> &middot; KeepKey &middot;
 OneKey &middot; Bitkey &middot; Tangem &middot; Cypherock &middot; NGRAVE &middot; Ellipal &middot;
 SafePal &middot; D&rsquo;CENT &middot; Satochip &middot; Prokey &middot; SecuX &middot; Arculus
-&middot; Ballet &middot; Passport Prime &middot; Portal &middot; Frostsnap &middot; Electrum
+&middot; Ballet &middot; Portal &middot; Frostsnap &middot; Electrum
 &middot; Nunchuk<sup>3</sup> &middot; Liana &middot; Wasabi &middot; Blockstream Green &middot;
 Bitcoin Core<sup>4</sup></strong></p>
 <ol class="mxnotes one">
@@ -1024,7 +1143,7 @@ whether they try to catch that at all, and the differences do not follow the met
     <tr><td>Gordian Seed Tool</td><td class="weak">Nothing and no roll count either</td></tr>
     <tr><td>Gordian seedtool-cli</td><td class="weak">Nothing, no roll count, and it will derive a seed from five rolls</td></tr>
     <tr><td>BlueWallet</td><td class="weak">Nothing and no minimum. Under-rolling silently tops up from the phone's RNG after a dialog</td></tr>
-    <tr><td>BitBox02, Jade, Passport, Sparrow, Specter DIY</td><td>Not applicable. These never see your rolls, so there is nothing for them to check</td></tr>
+    <tr><td>BitBox02, Jade, both Passports, Sparrow, Specter DIY</td><td>Not applicable. These never see your rolls, so there is nothing for them to check</td></tr>
   </tbody>
 </table>
 </div>
@@ -1760,7 +1879,7 @@ such.</p>
     <tr><td><strong>Keystone</strong></td><td>C</td><td><a href="https://github.com/KeystoneHQ/keystone3-firmware/blob/3.0.2/src/ui/gui_widgets/gui_dice_rolls_widgets.c#L329-L339">keystone3-firmware @ 3.0.2</a></td></tr>
     <tr><td><strong>BitBox02</strong></td><td>Rust and a PDF</td><td><a href="https://github.com/BitBoxSwiss/bitbox02-firmware/blob/firmware%2Fv9.26.4/src/rust/bitbox02-rust/src/workflow/mnemonic.rs#L293-L308">bitbox02-firmware @ v9.26.4</a>, plus the vendor's <a href="https://bitbox.swiss/bitbox02/BitBox_Diceware_LookupTable.pdf">lookup table</a></td></tr>
     <tr><td><strong>Blockstream Jade</strong></td><td>C and a help article</td><td><a href="https://github.com/Blockstream/Jade/blob/1.0.40/main/process/mnemonic.c">Blockstream/Jade @ 1.0.40</a>, plus its <a href="https://help.blockstream.com/blockstream-jade/add-more-security-functionality/create-a-recovery-phrase-using-dice">dice article</a> and the <a href="https://storage.googleapis.com/dxp-production-assets/content/blockstream-jade/add-more-security-functionality/create-a-recovery-phrase-using-dice/JadeDiceRollsGuide.pdf">17-page guide</a> it links</td></tr>
-    <tr><td><strong>Foundation Passport</strong></td><td>MicroPython</td><td><a href="https://github.com/Foundation-Devices/passport2/blob/v2.3.11/ports/stm32/boards/Passport/modules/predictive_utils.py#L63-L77">passport2 @ v2.3.11</a></td></tr>
+    <tr><td><strong>Foundation Passport</strong></td><td>MicroPython and Rust</td><td>Core: <a href="https://github.com/Foundation-Devices/passport2/blob/v2.3.11/ports/stm32/boards/Passport/modules/predictive_utils.py#L63-L77">passport2 @ v2.3.11</a>. Prime: <a href="https://github.com/Foundation-Devices/KeyOS/blob/v1.3.1/utils/seed-quiz/src/lib.rs#L38-L67">KeyOS @ v1.3.1</a>, a separate codebase reaching the same behavior</td></tr>
     <tr><td><strong>Sparrow</strong></td><td>Java</td><td><a href="https://github.com/sparrowwallet/sparrow/blob/2.5.3/src/main/java/com/sparrowwallet/sparrow/control/MnemonicKeystorePane.java#L393-L406">sparrowwallet/sparrow @ 2.5.3</a></td></tr>
     <tr><td><strong>Specter DIY</strong></td><td>MicroPython</td><td><a href="https://github.com/cryptoadvance/specter-diy/blob/v1.10.4/src/gui/screens/mnemonic.py">specter-diy @ v1.10.4</a></td></tr>
     <tr><td colspan="3"><span class="tag">Software tools and apps</span></td></tr>
@@ -1873,6 +1992,41 @@ been fully verified and wallets were drained at scale. Coinkite issued emergency
 <p>The procedural half of that objection is undiminished and the specific failure it describes is
 one the better implementations already prevent, by refusing to proceed below the required roll
 count.</p>
+
+<h2 id="corrections"><a class="anchor" href="#corrections"><span class="num">21</span>Corrections</a></h2>
+<p><strong>Substantive changes made after publication are recorded here</strong>, with what changed
+and why. Revisions made while drafting are not corrections and are not listed.</p>
+
+<ul class="mxnotes">
+  <li><strong>2026-08-18, Passport Prime was listed as offering nothing for dice, and should not
+  have been.</strong> KeyOS v1.3.1, released 2026-08-07, added a final-word helper wired into seed
+  entry in the onboarding and Seed Vault apps, so Prime will complete a hand-built phrase. The crate
+  did not exist at v1.3.0, the release this page was surveyed against, so the claim was true when it
+  was read and had been false for nine days when it was published. Prime leaves
+  <a href="#none">&sect;13</a>, and the &sect;13 count drops from 25 wallets to 24. It does not get
+  a row of its own: Prime is a separate codebase reaching the same behavior as Passport Core, right
+  down to taking the last word's spare bits from the device's RNG, so it is covered by the existing
+  Foundation Passport entry in <a href="#methods">&sect;7</a> and <a href="#paper">&sect;12</a>,
+  the way Jade and Coldcard rows cover their hardware variants. <a href="#sources">&sect;18</a>
+  carries both pins, since two codebases were read. The differences between the two are real but
+  do not change what a reader does, and are recorded in
+  <a href="evidence/wallet-dice-survey.md">the survey</a> instead.</li>
+  <li><strong>2026-08-20, SeedSigner was recorded as taking coin flips, and does not.</strong>
+  <code>generate_mnemonic_from_coin_flips</code> exists in
+  <code>helpers/mnemonic_generation.py</code> at 0.8.7 and implements the hashed construction over a
+  binary alphabet, but it has no caller anywhere in the source or the tests, so no menu reaches it.
+  The live coin-flip affordance is the Calc Final Word tool, which uses coin flips for the last
+  word's spare bits through a different function. The <a href="#methods">&sect;7</a> row now reads
+  dice only, and its note records the unreachable routine. The chart was reporting a capability the
+  code has and the product does not.</li>
+  <li><strong>2026-08-20, a comparison of the hand methods added to <a href="#tradeoffs">&sect;1</a>.</strong>
+  A chart rating six ways of producing a seed across setup, procedure, and what each leaves you to
+  verify, with a short justification for every rating and a closing case for dice as a reasonable
+  compromise across the three. Two existing lines changed with it: the opening now calls dice one
+  answer to an untrustworthy RNG rather than the answer, since the chart carries four hand methods;
+  and a line saying verification generally needs a computer was cut, being true of the hashed
+  methods but not of the worksheet or word-picking routes.</li>
+</ul>
 
 
 </div>

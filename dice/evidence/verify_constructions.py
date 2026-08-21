@@ -1,4 +1,4 @@
-import hashlib
+import hashlib, math
 WORDS = open("bip39_english.txt").read().split()
 assert len(WORDS) == 2048
 
@@ -25,6 +25,11 @@ print(f"BIP-39 self-test: {len(OFFICIAL)}/{len(OFFICIAL)} official vectors repro
 def reference(rolls, words):
     e = hashlib.sha256(rolls.encode()).digest()
     return bip39_encode(e[:16] if words == 12 else e)
+
+def bowser(rolls):
+    "lnbits/hardware-wallet: exactly 100 ASCII rolls, full 32-byte digest, 24 words"
+    assert len(rolls) == 100 and all(c in "123456" for c in rolls)
+    return bip39_encode(hashlib.sha256(rolls.encode()).digest())
 
 def keystone(rolls, words):
     e = hashlib.sha256(rolls.replace("6","0").encode()).digest()
@@ -59,3 +64,15 @@ for p in [(1,1,1,1,1,0),(1,1,1,1,1,1),(2,1,1,1,1,0),(4,4,4,4,4,1)]:
     idx,w = bb(*p)
     print(f"  dice {p[:5]} coin {p[5]} -> index {idx:4d} -> {w}")
 print("  5 dice x 2 bits + 1 coin bit = 11 bits per word; 23 words = 253 bits")
+
+print("\nBowser (LNbits) hashes the same way but demands a 100th roll:")
+V100 = V99 + "4"
+b24 = bowser(V100)
+print(f"  reference, first 99 : {r24}")
+print(f"  Bowser, all 100     : {b24}")
+print(f"  differs from reference: {b24 != r24}")
+print(f"  words in common: {sum(1 for a,b in zip(b24.split(), r24.split()) if a==b)}/24")
+print(f"  truncating Bowser's 100 rolls to 99 recovers Bowser's seed: "
+      f"{reference(V100[:99], 24) == b24}")
+print(f"  input entropy: 99 rolls {99*math.log2(6):.3f} bits, "
+      f"100 rolls {100*math.log2(6):.3f} bits, against a 256-bit digest")

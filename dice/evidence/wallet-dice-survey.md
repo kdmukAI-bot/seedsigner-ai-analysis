@@ -34,6 +34,21 @@
 > 5. **Sparrow and Specter DIY move out of the class (d) summary row**, where they were still listed
 >    despite sections 11 and 12 placing them elsewhere.
 
+> **Extension note (2026-08-18).** Two additions, one of which corrects a claim that had gone stale
+> between survey and publication. Nothing in sections 1 to 16 was overturned.
+>
+> 1. **Bowser** (`lnbits/hardware-wallet`) was never examined, and the class (d) listing in
+>    section 12 was stale. It implements the reference construction exactly and requires **100
+>    rolls rather than 99**, which is the only thing separating it from SeedSigner and is enough to
+>    break interoperability. Section 17. It is **not charted on the published page**, which covers
+>    the established implementations; this survey records the reading regardless.
+> 2. **Passport Prime is no longer class (d).** KeyOS `v1.3.1` (2026-08-07) added a final-word
+>    affordance that did not exist at `v1.3.0`, the commit this survey pinned. Section 18. The
+>    section 11 note and the summary table are corrected accordingly. Prime and Core reach the same
+>    behavior by separate codebases, so the published page carries them as one entry citing both
+>    sources; the differences below are recorded here rather than there, because none of them
+>    changes what a reader does.
+
 ## Taxonomy used from the revision onward
 
 | Class | Meaning |
@@ -92,6 +107,13 @@
 | `WalletWasabi/WalletWasabi` | @ `27e6e7c860461cd98df4123e8c06e0d159382d63` |
 | `Blockstream/green_qt` | @ `5aaf284ba54ad04221ed0935243f5a16d189bb0d` |
 | `cryptoadvance/specter-diy` | `v1.10.4` @ `fa7d46d72ccc4fe3912d74ceb99358f13c3609ea` |
+
+### Added in the 2026-08-18 extension
+
+| Repo | Tag @ commit |
+|---|---|
+| `lnbits/hardware-wallet` | `v0.8.1` @ `06ee5374dc211e518f8775002756432de3d8a712` |
+| `Foundation-Devices/KeyOS` | `v1.3.1` @ `de966a11e88d28f116b52509679c19eb33591711` |
 
 ---
 
@@ -607,7 +629,7 @@ The device **picks** the final word using its own RNG rather than showing the va
 
 Guard: `modules/utils.py:1554` `insufficient_randomness()` warns if any word repeats more than twice.
 
-**Passport gen 1 never had Coldcard's dice flow.** At `v1.1.0` = `e985d0a0a2097715147091186f35e4aac393f5e0`, zero hits for `add_dice_rolls`/`dice_rolls`/`roll_dice`, and no dice commit anywhere in repo history. It was never present, not removed. **Passport Prime** runs a separate codebase (`Foundation-Devices/KeyOS`, verified at `425c9791007146d46355478b3ec321f2321ab226`) with zero dice hits and no final-word feature: class (d).
+**Passport gen 1 never had Coldcard's dice flow.** At `v1.1.0` = `e985d0a0a2097715147091186f35e4aac393f5e0`, zero hits for `add_dice_rolls`/`dice_rolls`/`roll_dice`, and no dice commit anywhere in repo history. It was never present, not removed. **Passport Prime** runs a separate codebase (`Foundation-Devices/KeyOS`). At `v1.3.0` = `425c9791007146d46355478b3ec321f2321ab226`, the commit originally surveyed, it had zero dice hits and no final-word feature: class (d). **That is no longer current.** `v1.3.1` added one; see section 18. Prime still has no dice arithmetic, so it is class (c) on the same terms as Passport Core.
 
 > A commit adding a "Custom Entropy" option under "Create Seed" exists
 > (`1f1e3494eb6edfc0ff5697cef526dc06c7d07834`) but is **in zero tags and not an ancestor of HEAD**.
@@ -634,7 +656,7 @@ Guard: `modules/utils.py:1554` `insufficient_randomness()` warns if any word rep
 - **Bull Bitcoin mobile** (`SatoshiPortal/bullbitcoin-mobile` @ `33a1ff1`): no dice feature found (hits are Italian localization — "dice" means "says" in Italian — and BIP85 tables).
 - **Specter DIY** (`cryptoadvance/specter-diy` @ tag `v1.10.4` = `fa7d46d72ccc4fe3912d74ceb99358f13c3609ea`): no dice, and the documented feature is **coin flips**, not dice. `grep -c dice` over the entire tree is **0**; the product page says *"Added Entropy — Use coin-flips to introduce extra randomness to key generation."* The 11-bit toggle keypad (`src/gui/screens/mnemonic.py:93`, place-values 1…1024) lets a user set any word's bits by hand with checksum auto-fix (`helpers.py:27-30`). Three precision points: there is **no XOR anywhere in the mnemonic path** (the maintainer's "XOR" is arithmetic the user does on paper), the toggled bits become entropy **directly and unhashed**, and **untouched words remain TRNG output** with no accounting. Secondary sources claiming Specter DIY takes dice input on-device are conflating coin flips with dice. **Reclassified to (c)**: hand-set word bits with checksum auto-fix is the same affordance as class (c), reached with coin flips rather than a dice table, and the untouched-words-stay-TRNG behavior is why the published chart also marks it as blending in the device's own entropy.
 - **Commercial hardware wallets, all class (d), none offering on-device dice or coin entropy:** Bitkey (`@cf16705`, no BIP-39 in the hardware path at all — 32 raw bytes into BIP-32), Cypherock X1 (`@5b11739`), Prokey (`@484d7b2` — note `firmware/reset.c:109-114` *is* a SHA-256→BIP-39 construction, but 32 bytes of device TRNG are unconditionally prepended), Satochip (`@8cbaa1d`, card never generates a seed), SecuX (`@3795a26`), SafePal (`@09ee73c`), ELLIPAL Joy (`@a672896`). Closed firmware, inferred from complete documented flows: Tangem, NGRAVE ZERO (its `zero-firmware` repo is an empty 60-byte placeholder), Ellipal Titan, D'CENT, Arculus (75-article help corpus, zero hits for dice/coin flip/entropy), Ballet (no BIP-39 at all).
-- **Open DIY signers, all class (d):** Portal `@a084b3a`, Bowser `@f0013ea`, Frostsnap `@6030ccb`, catcard `@a8d52b0` (dice explicitly *planned*, `docs/ENTROPY.md:148`), keep-esp32 `@f195c74`.
+- **Open DIY signers, all class (d):** Portal `@a084b3a`, ~~Bowser `@f0013ea`~~ (**superseded**: Bowser shipped a dice path by `v0.8.1`, see section 17), Frostsnap `@6030ccb`, catcard `@a8d52b0` (dice explicitly *planned*, `docs/ENTROPY.md:148`), keep-esp32 `@f195c74`.
 
 **Caveat on negative findings.** These conclusions now rest on cloned working-tree greps, release-note sweeps and first-party documentation, not on GitHub code search alone. **The original survey's method was not sufficient**, and the specific failure modes are worth recording because they cut both ways:
 
@@ -765,13 +787,14 @@ A from-scratch BIP-39 encoder (standard library only, no wallet code) was valida
 | Gordian Seed Tool (iOS) | (a) | SHA256(raw ASCII rolls)`[0:16]`, unconditional; 12 words only | **YES (12w)**; no 24w path |
 | Gordian seedtool-cli | (a) | SHA256(raw ASCII rolls), first N bytes | **YES** (construction) |
 | bitcoiner.guide Seed Tool | (a) | Hashed mode: SHA256(raw ASCII rolls), first 16/32B | **YES** (hashed mode); raw mode NO |
+| **Bowser** (LNbits) | **(a) construction, (b) outcome** | `wally_sha256(ASCII rolls)`, full 32B; **exactly 100 rolls, 24 words only** | **NO** (roll count alone; the arithmetic is identical) |
 | **Keystone** | **(b)** | **Remaps 6→0, then SHA256 + truncate. 100 rolls for 24w** | **NO** (0/24 words match) |
 | AirGap Vault, "Coldcard" mode | (b) | Remaps 6→0, then SHA256. Misnamed; Coldcard does not do this | **NO** |
 | iancoleman.io, Dice mode | (b) | Remaps 6→0; default sub-mode does not hash at all | **NO** (both sub-modes) |
 | BlueWallet | (b) | Unhashed bit packing, 0-indexed faces, RNG fills shortfall | **NO**, and not reproducible twice |
 | **BitBox02** | **(c)** | Paper table, 5 rejection-sampled dice + coin = 11 bits/word; device solves word 24 | **NO** (no hashing at all) |
 | **Blockstream Jade** | **(c)** | Paper table; device shows checksum-valid final words | **NO** |
-| **Foundation Passport** | **(c)** | Paper table; device *picks* the final word with its own RNG | **NO** |
+| **Foundation Passport** (Core and Prime) | **(c)** | Paper table; device *picks* the final word with its own RNG. Separate codebases, same behavior; per-product detail in §18 | **NO** |
 | **Sparrow** | **(c)** | Autosuggests checksum-valid final words on the seed-entry path; Border Wallets grid, no dice screen | **NO** |
 | **Specter DIY** | **(c)** | 11-bit keypad sets any word by hand from coin flips, checksum auto-fixed; untouched words stay TRNG | **NO** |
 | Trezor, Ledger, KeepKey, OneKey, Electrum, Nunchuk, Liana, Wasabi, Green, Bitcoin Core, Bull Bitcoin, and the commercial and DIY devices listed in §12 | (d) | — | n/a |
@@ -991,3 +1014,147 @@ line earlier, so it understates the entropy by the difference between the packin
 
 Hex mode raises no warning because `"hexadecimal"` maps every character to exactly 4 bits
 (`entropy.js`), so the same 99 characters yield 396 bits and clear 256 outright.
+
+---
+
+## 17. Bowser (`lnbits/hardware-wallet`) — HAS DICE — reference construction at 100 rolls
+
+Pinned to `v0.8.1` = `06ee5374dc211e518f8775002756432de3d8a712`. `wallet/723_cmd_create.ino` is
+byte-identical at `main` HEAD `c8c7c694cc50d41452b909329c435674f16eb450`; only `README.md` differs
+between the two, so the tag is a safe pin for this reading.
+
+Bowser Wallet is an ESP32 signer built on generic dev boards, with no secure element. The dice path
+is reached over an encrypted WebSerial session or from an air-gapped `commands.in.txt` on microSD.
+
+`wallet/100_constants.ino:36`:
+
+```c
+const int DICE_ROLL_COUNT = 100;
+```
+
+`wallet/723_cmd_create.ino:32-51`:
+
+```c
+  char rolls[DICE_ROLL_COUNT];
+  int rollCount = collectDiceRolls(rolls, DICE_ROLL_COUNT);
+  if (rollCount != DICE_ROLL_COUNT) { /* ... refuse ... */ }
+
+  uint8_t entropy[32];
+  if (wally_sha256((uint8_t *)rolls, sizeof(rolls), entropy, sizeof(entropy)) != WALLY_OK) { ... }
+  clearSensitiveBytes((uint8_t *)rolls, sizeof(rolls));
+
+  String mnemonic = mnemonicFromBytes(entropy, sizeof(entropy));
+```
+
+`mnemonicFromBytes` (`wallet/410_bitcoin.ino:32-39`) calls
+`bip39_mnemonic_from_bytes(NULL, entropy, 32, &mnemonic)`. The `NULL` wordlist resolves to English
+in the vendored libwally (`libraries/libwally/vendor/src/bip39.c:125`, `w = w ? w : &en_words`).
+
+**Construction, VERIFIED.** Concatenate the ASCII digits `'1'`–`'6'` of exactly 100 D6 rolls with no
+delimiter and no remap; take one SHA-256 over the 100-byte buffer; use the **full 32-byte digest**
+directly as BIP-39 entropy. 24 words only. There is no 12-word path and no 50-roll path.
+
+**This is the SeedSigner construction with one more roll.** Every step matches the reference: same
+ASCII encoding, same single hash, same untruncated digest for 24 words. The roll count is the entire
+difference, and it is sufficient to break interoperability, because the hash input is a different
+byte string:
+
+```
+Rolls  655152231316521321611331544441236164664431121534415633526456254462245546236542364246312613322234612 (+ "4")
+
+SeedSigner, first 99 : eyebrow obvious such suggest poet seven breeze blame virtual frown dynamic
+                       donor harsh pigeon express broccoli easy apology scatter force recipe shadow
+                       claim radio
+Bowser, all 100      : achieve absurd other chef buffalo picnic flower coil evolve style mistake
+                       disorder grace include acquire inquiry plug library badge wall mom label
+                       toddler equip
+```
+
+Truncating a Bowser transcript to its first 99 rolls does not recover the Bowser seed either; it
+recovers the SeedSigner seed for that prefix. A Bowser dice transcript reproduces on Bowser alone.
+
+**100 rolls is not a defect.** 100 × log2(6) = 258.496 bits against a 256-bit digest, so the dice
+input saturates the seed. SeedSigner's and Coldcard's 99 gives 255.911, a shortfall of 0.089 bits
+that is of no practical consequence. Bowser is not unusual in exceeding 256 bits: Keystone also
+demands at least 100 for 24 words, and Coldcard allows up to `MAX_ROLLS` 256 above its 99 minimum.
+What is unusual is that Bowser requires *exactly* 100, neither more nor fewer. Per pitfall
+6, differing from the canonical construction is not a severity finding, and this one is a
+reproducibility fact rather than a weakness. The vendor documents the count plainly in `README.md`,
+which is the difference from Keystone, whose documentation still says 99 while its firmware requires
+100.
+
+**Guards: none beyond the count.** No face-distribution check, no Shannon score, no pattern
+detector. The count is hard-gated: `collectDiceRolls` cannot return fewer than
+`DICE_ROLL_COUNT` (`*` backspaces, `#` confirms only at 100/100), so the caller's
+`rollCount != DICE_ROLL_COUNT` guard is defensive and unreachable.
+
+**Handling.** The roll buffer is zeroized with `clearSensitiveBytes` immediately after hashing, as
+are the entropy bytes after the mnemonic is built. Neither the rolls nor the seed words are written
+to the microSD card; `commands.out.txt` receives only `/create 1`. Note that `commands.in.txt`
+contains the wallet password in the air-gapped flow.
+
+**No final-word affordance: this is NOT class (c).** `wallet/717_cmd_restore.ino:32-35` rejects any
+phrase failing `bip39_mnemonic_validate`, so a user cannot enter 23 words and have the device
+complete the 24th. Bowser is therefore the only device implementing the hashed construction that
+will not finish a hand-built phrase.
+
+**Availability caveat.** Dice entry requires a matrix keypad or a touchscreen
+(`executeCreate` returns "Dice input unavailable" when `!BOARD.hasMatrixKeypad &&
+!BOARD.hasTouchscreen`). The single-button Waveshare target has no dice path.
+
+**Out of scope but noted:** a separate hardware-RNG path with health checks
+(`wallet/rng_health.h`, `deriveHealthyHardwareEntropy()`) and a `/trng` command that draws a
+100-bin histogram over 5,000 samples and reports a chi-squared statistic against the NIST
+critical values for 99 degrees of freedom. That is RNG diagnostics, not dice, and was not verified.
+
+---
+
+## 18. Passport Prime gains a final-word affordance (KeyOS `v1.3.1`)
+
+**This supersedes the class (d) placement in section 11.** The original reading was correct at the
+commit it pinned and became wrong with a firmware release.
+
+Verified at `v1.3.1` = `de966a11e88d28f116b52509679c19eb33591711` (2026-08-07),
+`utils/seed-quiz/src/lib.rs:33-67`:
+
+```rust
+/// Suggest a checksum-valid final word for a 12- or 24-word entry.
+///
+/// A random filler word supplies the remaining entropy bits. `from_entropy`
+/// recomputes the checksum, and retrying rejects the word already displayed so
+/// the result always changes without touching the user's prefix words.
+pub fn random_last_word<S: AsRef<str>>(words: &[S]) -> Option<String> {
+    let (candidate_count, checksum_bits) = match prefix.len() {
+        11 => (128, 4),
+        23 => (8, 8),
+        ...
+```
+
+**The crate did not exist at the previously pinned commit.** `git ls-tree -r v1.3.0` (`425c9791`)
+returns no path under `utils/seed-quiz`, and no `random_last_word`/`final_word` symbol appears
+anywhere in that tree. This is a new feature, not a missed read.
+
+**It is wired in, not dead code.** `seed_quiz::init_seed_callbacks!(ui)` is invoked from
+`os/gui-app-onboarding/src/main.rs:705` and `apps/gui-app-seed-vault/src/callbacks.rs:309`, and
+`ui/ui/pages/seed-entry.slint:32` declares `callback suggest-last-word(words: [string]) -> string`
+with Generate and Regenerate controls bound to it.
+
+**Class (c), on the same terms as Passport Core.** The device picks one of the valid completions
+with its own RNG rather than presenting them, so the last word's residual entropy bits are the
+device's. Prime's implementation is the better of the two in one respect: the retry path computes
+`random + usize::from(random >= current)` over `candidate_count - 1`, which excludes the word
+currently shown, so regenerating always changes the result. Foundation's own maintainer notes that
+Core's retry "may repeat a word rather than cycling through all eight"
+([passport2#656](https://github.com/Foundation-Devices/passport2/issues/656), 2026-08-02).
+
+**Still no dice arithmetic anywhere in the Foundation codebases.** Checked on 2026-08-18 across
+`passport2` (every tag through `v2.4.0-beta-1`, `main`, and all 475 branch names), `KeyOS`
+(`v1.3.1` = `main`, all branches), `passport-firmware`, plus org-wide code, commit, PR, and issue
+search. The only entropy-related branch, `sft-7320-entropy-hardening` @ `273e24fe` (2026-08-01), is
+RNG failure propagation and health checks. The `KeyOS-Releases` `1.4.0-beta1` notes (2026-08-16,
+newer than any pushed source) describe entropy hardening as mixing the ATECC608 secure element in as
+a third source, with no dice.
+
+First-party statement on the question, from Foundation's Ken Carpenter in passport2#656
+(2026-08-02): *"Side note: If we add direct support for dice rolls, this will not be an issue. We
+are still discussing the best way we might offer this."*
