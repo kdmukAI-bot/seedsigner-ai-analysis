@@ -241,6 +241,28 @@ Applies to every analysis. Candidate findings that depend on these do not apply:
   and any raw `data/` alongside.
 - Color is semantic: the accent is structural only (rules, eyebrows, section numbers), green
   carries "verified", amber carries "caveat". Never put the accent on a status element.
+- **A comparison chart may use a full red / amber / green scale.** This is the one exception to
+  the rule above, and it exists because the rule breaks down where a reader has to rank cells at a
+  glance. Green, amber, and a neutral gray does not read as a scale: the gray is an absence rather
+  than a bottom, so the worst cell looks merely unremarkable. Red is what makes the ranking legible,
+  and it is legible precisely because green is on the same grid.
+  `dice/standard.html` §1 is the worked example.
+
+  The carve-out is narrow and carries conditions:
+
+  - **Define scoped tokens, do not reach for the accent.** The accent stays structural. A ratings
+    chart declares its own `--dim*` variables with light and dark values, so the exception cannot
+    leak into the rest of the page.
+  - **Rank by saturation, not brightness.** Tiers set at different lightnesses compete with each
+    other and with the surrounding page, and the eye reads "bright" as "important" regardless of
+    hue. Hold the grounds at one lightness and vary how much color is in them. A four-step scale
+    needs this; the first draft ranked by brightness and the deep green pulled harder than the red,
+    so the chart emphasized its best cells instead of its costs.
+  - **Ink desaturates with its ground.** Full-strength green text on a washed-out green ground
+    makes the quiet tier the highest-contrast cell on the grid, which inverts the whole point.
+  - **Every cell says its rating in words too.** The color is a second channel, never the only one.
+    A reader who cannot separate the greens still gets the ranking from the labels, and the legend
+    names each tier.
 - Figures state their processing parameters — gain, crop, scaling — so they can be regenerated.
 - **Short paragraphs, one point each**, especially in part one. A paragraph that makes three
   points is three paragraphs. Break rather than pack.

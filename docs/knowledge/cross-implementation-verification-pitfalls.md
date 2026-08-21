@@ -1,9 +1,12 @@
-# Verifying other people's wallets: six ways the check quietly proves nothing
+# Verifying other people's wallets: eight ways the check quietly proves nothing
 
 Established 2026-08-05 during the adversarial review of the `dice/` analysis pair. Every item
 below is a mistake that was actually made and shipped into a draft, then caught only because a
 second agent was told to refute rather than confirm. They are recorded because the same traps
 recur on any survey of third-party implementations.
+
+Items 7 and 8 were added 2026-08-20. Both had already reached the published page, so they are
+recorded in `dice/standard.html` §21 as corrections as well as here.
 
 Backing evidence for the dice survey itself lives in `dice/evidence/wallet-dice-survey.md`.
 
@@ -152,6 +155,55 @@ cannot catch a transposition inside a row, which is exactly the silent defect ab
 of check per artifact; a single "verified against the wordlist" claim over a set that was checked to
 two different depths is the kind of blanket assurance this document exists to prevent.
 
+## 7. A function with no caller is not a feature
+
+`dice/standard.html` §7 recorded SeedSigner as accepting coin flips as well as dice, and the survey
+justified the mark by citing `helpers/mnemonic_generation.py`
+`generate_mnemonic_from_coin_flips`, which takes 128 or 256 binary characters, hashes them, and is a
+correct implementation of the reference construction over a binary alphabet.
+
+The function has **no caller anywhere in `src/` or `tests/`** at tag `0.8.7`. No menu reaches it.
+The live coin-flip affordance is the Calc Final Word tool, which supplies only the last word's spare
+bits and goes through `get_partial_final_word`, a different function.
+
+The survey found the code by searching for the construction and stopped there. Finding an
+implementation proves the *code* can do it; it says nothing about whether the *product* does. For a
+chart that answers "what can I do on this device," reachability is the claim, and reachability means
+tracing back to a view, a menu entry, or a documented flow.
+
+Cheap check, worth running on every capability claim:
+
+```bash
+git grep -n "<function_name>" <tag> -- 'src/*' 'tests/*'
+```
+
+One hit, the definition itself, is the tell. Related to pitfall 3, which is about documentation
+overstating code; this is code overstating the product, and it is easier to fall for because
+reading the source feels like the rigorous move.
+
+## 8. A claim verified at a pinned commit can expire before it is published
+
+`dice/standard.html` §13 listed Passport Prime among wallets offering nothing for dice. That was
+read from source and correct at KeyOS `v1.3.0` (`425c9791`), the commit the survey pinned.
+
+KeyOS `v1.3.1` shipped 2026-08-07 and added `random_last_word` in `utils/seed-quiz/src/lib.rs`,
+wired into seed entry in two apps. The page was published 2026-08-16. The claim was therefore
+**false for nine days before it went live**, and nothing in the process would have surfaced that:
+pinning protects line numbers and reproducibility, not currency.
+
+Pinning is still right. What it does not do is make a negative claim durable, and negative claims
+are the exposed ones. "Implements X" stays true once shipped; "offers nothing" is one release away
+from being wrong, and the vendor has no reason to tell you.
+
+Two habits close the gap, both cheap:
+
+- **Re-check negative claims against the latest tag immediately before publishing**, not against
+  the pin. `git ls-remote --tags upstream` is one call and shows whether anything shipped since.
+- **Verify the change is real before recording it as one.** Here, `git ls-tree -r v1.3.0` returned
+  no path under `utils/seed-quiz`, confirming a new feature rather than a missed read. That
+  distinction decides whether the correction reads "we were wrong" or "this changed," and they are
+  different statements about the analysis's reliability.
+
 ## The meta-lesson
 
 All four survived a first review pass and were caught only by agents briefed to *refute*, with an
@@ -160,3 +212,10 @@ a pass briefed to break things finds these. See also the reverse failure: in the
 agents disagreed about a figure and the one recommending a "fix" was wrong — the shipped script
 was the buggy artifact and the published number was right. Verify agent findings before acting on
 them, in both directions.
+
+**Items 7 and 8 were caught by neither mechanism.** Both were found by the project's own developer
+reading the finished draft and saying "that isn't how that works" — one about a device he maintains,
+one about a vendor he tracks. Adversarial agents did not catch them because both claims were
+*internally* consistent: the code existed and had been read, the pin was real and correctly quoted.
+Nothing in the artifact contradicted itself. That is the residual risk after every automated check
+passes, and it is why a domain reader on the finished draft is not a formality.
