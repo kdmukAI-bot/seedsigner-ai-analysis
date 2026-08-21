@@ -124,6 +124,13 @@ A common skeleton, not a specification.
 - **Label claims VERIFIED or INFERRED.** Verified means read from source at a pinned commit, or
   measured. Inferred means reasoned, with the inference stated.
 - **Pin every source link to a tag**, never a branch, so line numbers stay correct.
+- **A paraphrase is not a quote, and the qualifiers are where the meaning lives.** An early draft
+  summarized the Coldcard disclosure's exception as "50 or more fair dice rolls." The source says
+  "at least 50 fair, independent and private rolls": two dropped words, each carrying a condition
+  the reader has to meet, and both of them things this page argues for elsewhere. Where a source's
+  exact wording is load-bearing, quote it rather than compressing it, and **check the quote against
+  the raw page** rather than against a fetched summary, since a tool that renders a page through a
+  small model returns text that reads verbatim without promising to be.
 - **Pin every layer of the measured stack, not just the one being edited.** A measurement
   claiming to characterize a released version must be built from refs traceable to that
   release at *every* layer — app, OS, firmware — with each pinned ref recorded alongside the
@@ -246,6 +253,24 @@ Applies to every analysis. Candidate findings that depend on these do not apply:
   or "or" joining just two elements is optional, and is omitted unless it genuinely aids clarity.
   Where dropping it would garden-path the reader ("costs you bits and fewer bits means"), split the
   sentence rather than reinstate the comma.
+
+### Social cards
+
+Each document declares an `og:image`. `dice/figures/` is the worked example, and its README carries
+the render command.
+
+- **Render the card from the document's own stylesheet** rather than drawing one. It then cannot
+  drift from the page's type or palette, and both themes come from a single source file.
+- **Whatever the card asserts has to be true.** The dice card shows the §8 worked example, and its
+  digest recomputes from the roll string on the page. A card is the most-shared artifact a document
+  has and the least likely to be checked, which is exactly why it does not get invented content.
+- **Nothing on a card is set below 19px.** X shows a 1200px-wide card at roughly a third of its
+  size, where 13px type lands at about 4px. That is not small text, it is noise: unreadable at every
+  size the card actually appears, while still costing contrast. If a line is not worth 19px, cut it
+  rather than shrink it. One deliberate exception is allowed where something stands for its kind
+  rather than asking to be read, as the digest does.
+- **Check edits at ~400px wide**, not at full size. Dark grounds read better at that scale than the
+  page's paper default, so the shipped card and the document's default theme need not match.
 
 ### Cutting
 
